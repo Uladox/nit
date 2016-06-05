@@ -7,4 +7,4 @@ test.o: test.c
 ../libnit.a:
 	(cd .. && make)
 clean:
-	rm test
+	rm -f test test.o

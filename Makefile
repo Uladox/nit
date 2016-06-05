@@ -2,11 +2,11 @@
 
 include config.mk
 
-SRC = hashmap.c maputils.c socket.c bimap.c
+SRC = hashmap.c maputils.c socket.c bimap.c io.c
 OBJ = $(SRC:.c=.o)
 
 LIB = libnit.a
-INC = list.h maputils.h hashmap.h socket.h bimap.h
+INC = list.h maputils.h hashmap.h socket.h bimap.h io.h
 
 all: $(LIB)
 
