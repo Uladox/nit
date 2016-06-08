@@ -100,7 +100,7 @@ hashentry_new(void *key, uint32_t key_size, void *storage)
 	entry->key = key;
 	entry->key_size = key_size;
 	entry->storage = storage;
-	NIT_LIST_CONS(entry, NULL);
+        LIST_CONS(entry, NULL);
 	return entry;
 }
 
@@ -140,15 +140,14 @@ hashmap_free(struct nit_hashmap *map)
 
 	for (i = 0; i != map->bin_num; ++i, ++bin) {
 		struct nit_hashentry *entry = bin->first;
+		struct nit_hashentry *tmp;
 
-		while (entry) {
-			struct nit_hashentry *tmp = entry;
-
-			map->free_contents(entry->key, entry->storage);
-			entry = NIT_LIST_NEXT(entry);
+		delayed_foreach (tmp, entry) {
+			map->free_contents(tmp->key, tmp->storage);
 			free(tmp);
 		}
 	}
+
 	free(map->bins);
 	free(map);
 }
@@ -165,12 +164,12 @@ hashmap_entry(struct nit_hashmap *map, void *key, uint32_t key_size)
 	if (!entry || map->compare(entry->key, entry->key_size, key, key_size))
 		return &map->bins[row].first;
 
-	nit_foreach (entry) {
-		struct nit_hashentry *next = NIT_LIST_NEXT(entry);
+        foreach (entry) {
+		struct nit_hashentry *next = LIST_NEXT(entry);
 
 		if (!next || map->compare(next->key, next->key_size,
 					 key, key_size))
-			return NIT_NEXT_REF(entry);
+			return NEXT_REF(entry);
 	}
 
 	fprintf(stderr,
@@ -178,7 +177,7 @@ hashmap_entry(struct nit_hashmap *map, void *key, uint32_t key_size)
 	exit(EXIT_FAILURE);
 }
 
-nit_map_occured
+enum nit_map_occured
 hashmap_add(struct nit_hashmap *map, void *key, uint32_t key_size,
 	    void *storage)
 {
@@ -205,7 +204,7 @@ hashmap_remove(struct nit_hashmap *map, void *key, uint32_t key_size)
 		return;
 
 	if (map->compare(entry->key, entry->key_size, key, key_size)) {
-		map->bins[row].first = NIT_LIST_NEXT(entry);
+		map->bins[row].first = LIST_NEXT(entry);
 		map->free_contents(entry->key, entry->storage);
 		free(entry);
 		--map->entry_num;
@@ -214,11 +213,11 @@ hashmap_remove(struct nit_hashmap *map, void *key, uint32_t key_size)
 
 	struct nit_hashentry *prev = entry;
 
-	entry = NIT_LIST_NEXT(entry);
+	entry = LIST_NEXT(entry);
 
-	nit_foreach (entry) {
+	foreach (entry) {
 		if (map->compare(entry->key, entry->key_size, key, key_size)) {
-			NIT_LIST_CONS(prev, NIT_LIST_NEXT(entry));
+		        LIST_CONS(prev, LIST_NEXT(entry));
 			map->free_contents(entry->key, entry->storage);
 			free(entry);
 			--map->entry_num;
@@ -234,7 +233,7 @@ hashmap_get(const struct nit_hashmap *map, const void *key, uint32_t key_size)
 	unsigned int row = murmur3_32(key, key_size, HASH_SEED) % map->bin_num;
 	struct nit_hashentry *entry = map->bins[row].first;
 
-	nit_foreach (entry)
+        foreach (entry)
 		if (map->compare(entry->key, entry->key_size, key, key_size))
 			return entry->storage;
 
@@ -247,7 +246,7 @@ rehash_add(struct nit_hashbin *bin, struct nit_hashentry *entry)
 {
 	struct nit_hashentry *tmp = bin->first;
 
-	NIT_LIST_CONS(entry, NULL);
+        LIST_CONS(entry, NULL);
 
 	if (!tmp) {
 		bin->first = entry;
@@ -255,10 +254,10 @@ rehash_add(struct nit_hashbin *bin, struct nit_hashentry *entry)
 	}
 
 	/* Finds end of list */
-	while (NIT_LIST_NEXT(tmp))
-		tmp = NIT_LIST_NEXT(tmp);
+	while (LIST_NEXT(tmp))
+		tmp = LIST_NEXT(tmp);
 
-	NIT_LIST_CONS(tmp, entry);
+        LIST_CONS(tmp, entry);
 }
 
 void
@@ -274,15 +273,13 @@ hashmap_rehash(struct nit_hashmap *map)
 
 	for (i = 0; i != map->bin_num; ++i, ++bin) {
 		struct nit_hashentry *entry = bin->first;
+		struct nit_hashentry *tmp;
 
-		while (entry) {
-			unsigned int row = murmur3_32(entry->key,
-						      entry->key_size,
-						      HASH_SEED) % new_bin_num;
-			struct nit_hashentry *tmp = NIT_LIST_NEXT(entry);
+		delayed_foreach (tmp, entry) {
+			uint32_t row = murmur3_32(tmp->key, tmp->key_size,
+						  HASH_SEED) % new_bin_num;
 
-			rehash_add(new_bins + row, entry);
-			entry = tmp;
+			rehash_add(new_bins + row, tmp);
 		}
 	}
 

@@ -36,8 +36,8 @@ nit_bimap_new(unsigned int lsequence,
 {
 	struct nit_bimap *map = malloc(sizeof(*map));
 
-	map->left = nit_hashmap_new(lsequence, lcompare, lfree_contents);
-	map->right = nit_hashmap_new(rsequence, rcompare, rfree_contents);
+	map->left = hashmap_new(lsequence, lcompare, lfree_contents);
+	map->right = hashmap_new(rsequence, rcompare, rfree_contents);
 
 	return map;
 }
@@ -66,19 +66,19 @@ nit_bimap_add(struct nit_bimap *map,
 		*rentry = hashentry_new(rkey, rsize, NULL);
 
 	lstorage->entry = *rentry;
-	NIT_LIST_CONS(lstorage, (*lentry)->storage);
+        LIST_CONS(lstorage, (*lentry)->storage);
 	(*lentry)->storage = lstorage;
 
 	rstorage->entry = *lentry;
-	NIT_LIST_CONS(rstorage, (*rentry)->storage);
+        LIST_CONS(rstorage, (*rentry)->storage);
 	(*rentry)->storage = rstorage;
 
-	if (!NIT_LIST_NEXT(*lentry))
+	if (!LIST_NEXT(*lentry))
 	        if (++map->left->entry_num / map->left->bin_num
 		    >= BIN_MAX_DENSITY)
 			hashmap_rehash(map->left);
 
-	if (!NIT_LIST_NEXT(*rentry))
+	if (!LIST_NEXT(*rentry))
 		if (++map->right->entry_num / map->right->bin_num
 		    >= BIN_MAX_DENSITY)
 			hashmap_rehash(map->right);

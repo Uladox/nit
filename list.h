@@ -28,3 +28,15 @@ struct nit_list {
 	((typeof(LIST) *) &NIT_LIST(LIST)->next)
 #define nit_foreach(LIST)			\
 	for (; LIST; LIST = NIT_LIST_NEXT(LIST))
+#define nit_delayed_foreach(TMP, LIST)					\
+	for (TMP = LIST, LIST ? (LIST = NIT_LIST_NEXT(LIST)) : NULL;	\
+	     TMP;							\
+	     TMP = LIST, LIST ? (LIST = NIT_LIST_NEXT(LIST)) : NULL)
+
+#if defined NIT_SHORT_NAMES || defined NIT_LIST_SHORT_NAMES
+#define LIST_NEXT(LIST) NIT_LIST_NEXT(LIST)
+#define LIST_CONS(LIST, END) NIT_LIST_CONS(LIST, END)
+#define NEXT_REF(LIST) NIT_NEXT_REF(LIST)
+#define foreach(LIST) nit_foreach(LIST)
+#define delayed_foreach(TMP, LIST) nit_delayed_foreach(TMP, LIST)
+#endif

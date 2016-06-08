@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#define NIT_SHORT_NAMES
 #include "list.h"
 #include "hashmap.h"
 
@@ -38,7 +39,7 @@ entry_gen(struct nit_hashentry *entry, FILE *output,
 {
 	int entry_num = 0;
 
-	for (; entry; entry = NIT_LIST_NEXT(entry)) {
+	foreach (entry) {
 		++entry_num;
 		fputs("&(struct nit_hashentry) {", output);
 		fprintf(output, "\n\t\t.key_size = %"PRIu32, entry->key_size);

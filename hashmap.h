@@ -19,10 +19,10 @@
  * #include "list.h"
  */
 
-typedef enum {
+enum nit_map_occured{
 	NIT_HASHMAP_ALREADY_PRESENT,
 	NIT_HASHMAP_ADDED
-} nit_map_occured;
+};
 
 struct nit_hashentry {
 	struct nit_list next;
@@ -61,7 +61,7 @@ struct nit_hashentry **
 nit_hashmap_entry(struct nit_hashmap *map,
 		  void *key, uint32_t key_size);
 
-nit_map_occured
+enum nit_map_occured
 nit_hashmap_add(struct nit_hashmap *hashmap,
 		void *key, uint32_t key_size,
 		void *storage);
