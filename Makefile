@@ -26,7 +26,7 @@ install: $(LIB) $(INC)
 uninstall:
 	@echo @ uninstall nitlib from $(DESTDIR)$(PREFIX)
 	@rm -f $(DESTDIR)$(PREFIX)/lib/$(LIB)
-	@rm -f $(DESTDIR)$(PREFIX)/include/nitlib/$(INC)
+	@rm -rf $(DESTDIR)$(PREFIX)/include/nitlib/
 
 clean:
 	rm -f $(LIB) $(OBJ)

@@ -39,18 +39,37 @@ struct nit_connection {
 	unsigned int len;
 };
 
-struct nit_connecter *nit_connecter_new(char *path);
-void nit_connecter_free(struct nit_connecter *cntr);
-struct nit_connection *nit_connection_connect(char *path);
-struct nit_connection *nit_connecter_accept(struct nit_connecter *cntr);
-void nit_connection_free(struct nit_connection *cntn);
-int nit_connection_end_check(struct nit_connection *cntn);
-void nit_connection_end_mutate(struct nit_connection *cntn, int value);
-void nit_connection_kill(struct nit_connection *cntn);
-int nit_connection_read(struct nit_connection *cntn,
-			 char **str, uint32_t *old_size,
-			 int *message_size, uint32_t offset);
-void nit_connection_send(struct nit_connection *cntn,
+struct nit_connecter *
+nit_connecter_new(char *path);
+
+void
+nit_connecter_free(struct nit_connecter *cntr);
+
+struct nit_connection *
+nit_connection_connect(char *path);
+
+struct nit_connection *
+nit_connecter_accept(struct nit_connecter *cntr);
+
+void
+nit_connection_free(struct nit_connection *cntn);
+
+int
+nit_connection_end_check(struct nit_connection *cntn);
+
+void
+nit_connection_end_mutate(struct nit_connection *cntn, int value);
+
+void
+nit_connection_kill(struct nit_connection *cntn);
+
+int
+nit_connection_read(struct nit_connection *cntn,
+		    char **str, uint32_t *old_size,
+		    int *message_size, uint32_t offset);
+
+void
+nit_connection_send(struct nit_connection *cntn,
 			  const void *msg, uint32_t msg_size);
 
 #if defined NIT_SHORT_NAMES || defined NIT_SOCKET_SHORT_NAMES

@@ -5,6 +5,7 @@
 #include <uniconv.h>
 #include <unistr.h>
 
+#define NIT_SHORT_NAMES
 #include "io.h"
 
 void

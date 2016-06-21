@@ -19,7 +19,7 @@
  * #include "list.h"
  */
 
-enum nit_map_occured{
+enum nit_map_occured {
 	NIT_HASHMAP_ALREADY_PRESENT,
 	NIT_HASHMAP_ADDED
 };
