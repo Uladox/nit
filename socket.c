@@ -26,14 +26,16 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include "palloc.h"
 #include "socket.h"
 
-struct nit_connecter *
-nit_connecter_new(char *path)
+Nit_connecter *
+nit_connecter_new(const char *path)
 {
 	int len;
-	struct nit_connecter *cntr = malloc(sizeof(*cntr));
+	Nit_connecter *cntr = palloc(cntr);
 
+	pcheck(cntr, NULL);
 	cntr->sd = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	if (cntr->sd == -1) {
@@ -57,18 +59,20 @@ nit_connecter_new(char *path)
 }
 
 void
-nit_connecter_free(struct nit_connecter *cntr)
+nit_connecter_free(Nit_connecter *cntr)
 {
 	close(cntr->sd);
 	free(cntr);
 }
 
-struct nit_connection *
-nit_connection_connect(char *path)
+Nit_connection *
+nit_connection_connect(const char *path)
 {
-	struct nit_connection *cntn = malloc(sizeof(*cntn));
+	Nit_connection *cntn = palloc(cntn);
 
+	pcheck(cntn, NULL);
 	cntn->sd = socket(AF_UNIX, SOCK_STREAM, 0);
+
 	if (cntn->sd == -1) {
 		perror("socket");
 		free(cntn);
@@ -94,10 +98,12 @@ nit_connection_connect(char *path)
 	return cntn;
 }
 
-struct nit_connection *
-nit_connecter_accept(struct nit_connecter *cntr)
+Nit_connection *
+nit_connecter_accept(Nit_connecter *cntr)
 {
-	struct nit_connection *cntn = malloc(sizeof(*cntn));
+	Nit_connection *cntn = palloc(cntn);
+
+	pcheck(cntn, NULL);
 
 	if (listen(cntr->sd, 5) == -1) {
 		perror("listen");
@@ -121,7 +127,7 @@ nit_connecter_accept(struct nit_connecter *cntr)
 }
 
 void
-nit_connection_free(struct nit_connection *cntn)
+nit_connection_free(Nit_connection *cntn)
 {
 	pthread_mutex_destroy(&cntn->end_mutex);
 	close(cntn->sd);
@@ -129,7 +135,7 @@ nit_connection_free(struct nit_connection *cntn)
 }
 
 int
-nit_connection_end_check(struct nit_connection *cntn)
+nit_connection_end_check(Nit_connection *cntn)
 {
 	int value;
 
@@ -140,7 +146,7 @@ nit_connection_end_check(struct nit_connection *cntn)
 }
 
 void
-nit_connection_end_mutate(struct nit_connection *cntn, int value)
+nit_connection_end_mutate(Nit_connection *cntn, int value)
 {
 	pthread_mutex_lock(&cntn->end_mutex);
 	cntn->end_bool = value;
@@ -148,7 +154,7 @@ nit_connection_end_mutate(struct nit_connection *cntn, int value)
 }
 
 void
-nit_connection_kill(struct nit_connection *cntn)
+nit_connection_kill(Nit_connection *cntn)
 {
 	int true_val = 1;
 
@@ -160,9 +166,9 @@ nit_connection_kill(struct nit_connection *cntn)
 }
 
 int
-nit_connection_read(struct nit_connection *cntn,
-		     char **str, uint32_t *old_size,
-		     int *msg_size, uint32_t offset)
+nit_connection_read(Nit_connection *cntn,
+		    char **str, uint32_t *old_size,
+		    int *msg_size, uint32_t offset)
 {
 	int retval;
 	uint32_t size = 0;
@@ -202,8 +208,8 @@ nit_connection_read(struct nit_connection *cntn,
 }
 
 void
-nit_connection_send(struct nit_connection *cntn,
-		     const void *msg, uint32_t msg_size)
+nit_connection_send(Nit_connection *cntn,
+		    const void *msg, uint32_t msg_size)
 {
 	if (!nit_connection_end_check(cntn))
 		if (send(cntn->sd, msg, msg_size, MSG_NOSIGNAL) < 0) {

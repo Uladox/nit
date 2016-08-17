@@ -14,12 +14,12 @@
  *    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct nit_list {
+typedef struct {
 	void *next;
-};
+} Nit_list;
 
 #define NIT_LIST(LIST)				\
-	((struct nit_list *) (LIST))
+	((Nit_list *) (LIST))
 #define NIT_LIST_NEXT(LIST)			\
 	((typeof(LIST)) (NIT_LIST(LIST)->next))
 #define NIT_LIST_CONS(LIST, END)		\

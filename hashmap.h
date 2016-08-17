@@ -19,63 +19,56 @@
  * #include "list.h"
  */
 
-enum nit_map_occured {
-	NIT_HASHMAP_ALREADY_PRESENT,
-	NIT_HASHMAP_ADDED
-};
-
-struct nit_hashentry {
-	struct nit_list next;
+typedef struct {
+	Nit_list next;
 	void *key;
 	uint32_t key_size;
 	void *storage;
-};
+} Nit_hashentry;
 
-struct nit_hashbin {
-	struct nit_hashentry *first;
-};
+typedef struct {
+	Nit_hashentry *first;
+} Nit_hashbin;
 
-struct nit_hashmap {
-	int (*compare)(const void *entry_key, uint32_t entry_key_size,
-		       const void *key, uint32_t key_size);
-	void (*free_contents)(void *key, void *storage);
+typedef int (*Nit_map_cmp)(const void *entry_key, uint32_t entry_key_size,
+			   const void *key, uint32_t key_size);
+
+typedef void(*Nit_map_free)(void *key, void *storage);
+
+typedef struct {
+	Nit_map_cmp compare;
+	Nit_map_free free_contents;
 	unsigned int bin_num;
 	int entry_num;
 	const int *primes_pointer;
-	struct nit_hashbin *bins;
-};
+	Nit_hashbin *bins;
+} Nit_hashmap;
 
-struct nit_hashentry *
+Nit_hashentry *
 nit_hashentry_new(void *key, uint32_t key_size, void *storage);
 
-struct nit_hashmap *
-nit_hashmap_new(unsigned int sequence,
-		int (*compare)(const void *entry_key, uint32_t entry_key_size,
-			       const void *key, uint32_t key_size),
-		void (*free_contents)(void *key, void *storage));
+Nit_hashmap *
+nit_hashmap_new(unsigned int sequence, Nit_map_cmp compare,
+		Nit_map_free free_contents);
 
 void
-nit_hashmap_free(struct nit_hashmap *hashmap);
+nit_hashmap_free(Nit_hashmap *hashmap);
 
-struct nit_hashentry **
-nit_hashmap_entry(struct nit_hashmap *map,
-		  void *key, uint32_t key_size);
+Nit_hashentry **
+nit_hashmap_entry(Nit_hashmap *map, void *key, uint32_t key_size);
 
-enum nit_map_occured
-nit_hashmap_add(struct nit_hashmap *hashmap,
-		void *key, uint32_t key_size,
-		void *storage);
+int
+nit_hashmap_add(Nit_hashmap *hashmap, void *key,
+		uint32_t key_size, void *storage);
 
 void
-nit_hashmap_remove(struct nit_hashmap *map,
-		   void *key, uint32_t key_size);
+nit_hashmap_remove(Nit_hashmap *map, void *key, uint32_t key_size);
 
 void *
-nit_hashmap_get(const struct nit_hashmap *map,
-		const void *key, uint32_t key_size);
+nit_hashmap_get(const Nit_hashmap *map, const void *key, uint32_t key_size);
 
 void
-nit_hashmap_rehash(struct nit_hashmap *map);
+nit_hashmap_rehash(Nit_hashmap *map);
 
 #if defined NIT_SHORT_NAMES || defined NIT_HASHMAP_SHORT_NAMES
 #define hashentry_new(...) nit_hashentry_new(__VA_ARGS__)

@@ -24,17 +24,13 @@
 
 #define BIN_MAX_DENSITY 10
 
-struct nit_bimap *
-nit_bimap_new(unsigned int lsequence,
-	      int (*lcompare)(const void *entry_key, uint32_t entry_key_size,
-			      const void *key, uint32_t key_size),
-	      void (*lfree_contents)(void *key, void *storage),
-	      unsigned int rsequence,
-	      int (*rcompare)(const void *entry_key, uint32_t entry_key_size,
-			      const void *key, uint32_t key_size),
-	      void (*rfree_contents)(void *key, void *storage))
+Nit_bimap *
+nit_bimap_new(unsigned int lsequence, Nit_map_cmp lcompare,
+	      Nit_map_free lfree_contents,
+	      unsigned int rsequence, Nit_map_cmp rcompare,
+	      Nit_map_free rfree_contents)
 {
-	struct nit_bimap *map = malloc(sizeof(*map));
+	Nit_bimap *map = malloc(sizeof(*map));
 
 	map->left = hashmap_new(lsequence, lcompare, lfree_contents);
 	map->right = hashmap_new(rsequence, rcompare, rfree_contents);
@@ -43,7 +39,7 @@ nit_bimap_new(unsigned int lsequence,
 }
 
 void
-nit_bimap_free(struct nit_bimap *map)
+nit_bimap_free(Nit_bimap *map)
 {
 	hashmap_free(map->left);
 	hashmap_free(map->right);
@@ -51,13 +47,13 @@ nit_bimap_free(struct nit_bimap *map)
 }
 
 void
-nit_bimap_add(struct nit_bimap *map,
+nit_bimap_add(Nit_bimap *map,
 	      void *lkey, uint32_t lsize, void *rkey, uint32_t rsize)
 {
-	struct nit_hashentry **lentry = hashmap_entry(map->left, lkey, lsize);
-	struct nit_hashentry **rentry = hashmap_entry(map->right, rkey, rsize);
-	struct nit_entry_list *lstorage = malloc(sizeof(*lstorage));
-	struct nit_entry_list *rstorage = malloc(sizeof(*rstorage));
+	Nit_hashentry **lentry = hashmap_entry(map->left, lkey, lsize);
+	Nit_hashentry **rentry = hashmap_entry(map->right, rkey, rsize);
+	Nit_entry_list *lstorage = malloc(sizeof(*lstorage));
+	Nit_entry_list *rstorage = malloc(sizeof(*rstorage));
 
 	if (!*lentry)
 		*lentry = hashentry_new(lkey, lsize, NULL);

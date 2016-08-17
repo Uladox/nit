@@ -21,41 +21,37 @@
  */
 
 
-struct nit_bimap {
-	struct nit_hashmap *left;
-	struct nit_hashmap *right;
-};
+typedef struct {
+        Nit_hashmap *left;
+        Nit_hashmap *right;
+} Nit_bimap;
 
-struct nit_entry_list {
-	struct nit_list next;
-	struct nit_hashentry *entry;
-};
+typedef struct {
+        Nit_list next;
+	Nit_hashentry *entry;
+} Nit_entry_list;
 
-struct nit_bimap *
-nit_bimap_new(unsigned int lsequence,
-	      int (*lcompare)(const void *entry_key, uint32_t entry_key_size,
-			      const void *key, uint32_t key_size),
-	      void (*lfree_contents)(void *key, void *storage),
-	      unsigned int rsequence,
-	      int (*rcompare)(const void *entry_key, uint32_t entry_key_size,
-			      const void *key, uint32_t key_size),
-	      void (*rfree_contents)(void *key, void *storage));
+Nit_bimap *
+nit_bimap_new(unsigned int lsequence, Nit_map_cmp lcompare,
+	      Nit_map_free lfree_contents,
+	      unsigned int rsequence, Nit_map_cmp rcompare,
+	      Nit_map_free rfree_contents);
 
 void
-nit_bimap_free(struct nit_bimap *map);
+nit_bimap_free(Nit_bimap *map);
 
 void
-nit_bimap_add(struct nit_bimap *map,
+nit_bimap_add(Nit_bimap *map,
 	      void *lkey, uint32_t lsize, void *rkey, uint32_t rsize);
 
-static inline struct nit_entry_list *
-nit_bimap_lget(struct nit_bimap *map, const void *key, uint32_t size)
+static inline Nit_entry_list *
+nit_bimap_lget(Nit_bimap *map, const void *key, uint32_t size)
 {
 	return nit_hashmap_get(map->left, key, size);
 }
 
-static inline struct nit_entry_list *
-nit_bimap_rget(struct nit_bimap *map, const void *key, uint32_t size)
+static inline Nit_entry_list *
+nit_bimap_rget(Nit_bimap *map, const void *key, uint32_t size)
 {
 	return nit_hashmap_get(map->right, key, size);
 }

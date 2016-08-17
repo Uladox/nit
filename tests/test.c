@@ -10,7 +10,7 @@
 
 static int
 hashmap_compare(const void *entry_key, uint32_t entry_key_size,
-	const void *key, uint32_t key_size)
+		const void *key, uint32_t key_size)
 {
 	return (*(int *) entry_key) == (*(int *) key);
 }
@@ -69,8 +69,8 @@ bimap_rcompare(const void *entry_key, uint32_t entry_key_size,
 static void
 bimap_free_contents(void *key, void *storage)
 {
-	struct nit_entry_list *list = storage;
-	struct nit_entry_list *prev = NULL;
+	Nit_entry_list *list = storage;
+	Nit_entry_list *prev = NULL;
 
 	nit_foreach (list) {
 		free(prev);
@@ -83,7 +83,7 @@ bimap_free_contents(void *key, void *storage)
 static MunitResult
 test_bimap(const MunitParameter params[], void* data)
 {
-	struct nit_bimap *map =
+	Nit_bimap *map =
 		bimap_new(2, bimap_lcompare, bimap_free_contents,
 			  0, bimap_rcompare, bimap_free_contents);
 	char str1[] = "cats";
@@ -92,7 +92,7 @@ test_bimap(const MunitParameter params[], void* data)
 	int int2 = 32;
 	int int3 = 42;
 	char str3[] = "not used";
-	struct nit_entry_list *entry;
+	Nit_entry_list *entry;
 
 	(void) params;
 	(void) data;

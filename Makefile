@@ -6,7 +6,7 @@ SRC = hashmap.c maputils.c socket.c bimap.c io.c
 OBJ = $(SRC:.c=.o)
 
 LIB = libnit.a
-INC = list.h maputils.h hashmap.h socket.h bimap.h io.h
+INC = list.h maputils.h hashmap.h socket.h bimap.h io.h palloc.h
 
 all: $(LIB)
 
@@ -20,13 +20,13 @@ install: $(LIB) $(INC)
 	@echo @ install nitlib to $(DESTDIR)$(PREFIX)
 	@mkdir -p $(DESTDIR)$(PREFIX)/lib
 	@cp $(LIB) $(DESTDIR)$(PREFIX)/lib/$(LIB)
-	@mkdir -p $(DESTDIR)$(PREFIX)/include/nitlib
-	@cp $(INC) $(DESTDIR)$(PREFIX)/include/nitlib/
+	@mkdir -p $(DESTDIR)$(PREFIX)/include/nit
+	@cp $(INC) $(DESTDIR)$(PREFIX)/include/nit/
 
 uninstall:
-	@echo @ uninstall nitlib from $(DESTDIR)$(PREFIX)
+	@echo @ uninstall nit from $(DESTDIR)$(PREFIX)
 	@rm -f $(DESTDIR)$(PREFIX)/lib/$(LIB)
-	@rm -rf $(DESTDIR)$(PREFIX)/include/nitlib/
+	@rm -rf $(DESTDIR)$(PREFIX)/include/nit/
 
 clean:
 	rm -f $(LIB) $(OBJ)
