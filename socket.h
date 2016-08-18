@@ -73,14 +73,14 @@ nit_connection_send(Nit_connection *cntn,
 		    const void *msg, uint32_t msg_size);
 
 #if defined NIT_SHORT_NAMES || defined NIT_SOCKET_SHORT_NAMES
-#define connecter_new(...) nit_connecter_new(__VA_ARGS__)
-#define connecter_free(...) nit_connecter_free(__VA_ARGS__)
-#define connection_connect(...) nit_connection_connect(__VA_ARGS__)
-#define connecter_accept(...) nit_connecter_accept(__VA_ARGS__)
-#define connection_free(...) nit_connection_free(__VA_ARGS__)
-#define connection_end_check(...) nit_connection_end_check(__VA_ARGS__)
-#define connection_end_mutate(...) nit_connection_end_mutate(__VA_ARGS__)
-#define connection_kill(...) nit_connection_kill(__VA_ARGS__)
-#define connection_read(...) nit_connection_read(__VA_ARGS__)
-#define connection_send(...) nit_connection_send(__VA_ARGS__)
+# define connecter_new(...)         nit_connecter_new(__VA_ARGS__)
+# define connecter_free(...)        nit_connecter_free(__VA_ARGS__)
+# define connection_connect(...)    nit_connection_connect(__VA_ARGS__)
+# define connecter_accept(...)      nit_connecter_accept(__VA_ARGS__)
+# define connection_free(...)       nit_connection_free(__VA_ARGS__)
+# define connection_end_check(...)  nit_connection_end_check(__VA_ARGS__)
+# define connection_end_mutate(...) nit_connection_end_mutate(__VA_ARGS__)
+# define connection_kill(...)       nit_connection_kill(__VA_ARGS__)
+# define connection_read(...)       nit_connection_read(__VA_ARGS__)
+# define connection_send(...)       nit_connection_send(__VA_ARGS__)
 #endif

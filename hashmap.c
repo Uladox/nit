@@ -20,6 +20,8 @@
 #include <string.h>
 
 #define NIT_SHORT_NAMES
+#include "macros.h"
+#include "palloc.h"
 #include "list.h"
 #include "hashmap.h"
 
@@ -95,12 +97,14 @@ murmur3_32(const char *key, uint32_t len, uint32_t seed)
 Nit_hashentry *
 hashentry_new(void *key, uint32_t key_size, void *storage)
 {
-	Nit_hashentry *entry = malloc(sizeof(*entry));
+	Nit_hashentry *entry = palloc(entry);
 
+	pcheck(entry, NULL);
 	entry->key = key;
 	entry->key_size = key_size;
 	entry->storage = storage;
         LIST_CONS(entry, NULL);
+
 	return entry;
 }
 
@@ -109,9 +113,10 @@ nit_hashmap_new(unsigned int sequence, Nit_map_cmp compare,
 		Nit_map_free free_contents)
 {
 	int i = 0;
-	Nit_hashmap *map = malloc(sizeof(*map));
 	Nit_hashbin *bin;
+	Nit_hashmap *map = palloc(map);
 
+	pcheck(map, NULL);
 	map->compare = compare;
 	map->free_contents = free_contents;
 	map->bin_num = hashmap_primes[sequence];
@@ -134,7 +139,7 @@ hashmap_free(Nit_hashmap *map)
 {
 	Nit_hashbin *bin = map->bins;
 
-	unsigned int i;
+	int i;
 
 	for (i = 0; i != map->bin_num; ++i, ++bin) {
 		Nit_hashentry *entry = bin->first;
@@ -167,29 +172,40 @@ hashmap_entry(Nit_hashmap *map, void *key, uint32_t key_size)
 
 		if (!next || map->compare(next->key, next->key_size,
 					 key, key_size))
-			return NEXT_REF(entry);
+			break;
 	}
 
-	fprintf(stderr,
-		"Error in nitlib hashmap: NULL not at end of entries!\n");
-	exit(EXIT_FAILURE);
+	return NEXT_REF(entry);
 }
 
 int
+hashmap_add_reduce(Nit_hashmap *map)
+{
+	if (++map->entry_num / map->bin_num >= BIN_MAX_DENSITY)
+		return hashmap_rehash(map);
+
+	return 0;
+}
+
+const char *nit_hashmap_present = "nit hashmap already contains element";
+const char *nit_hashmap_no_mem  = "nit hashmap could not allocate memory";
+
+const char *
 hashmap_add(Nit_hashmap *map, void *key, uint32_t key_size,
 	    void *storage)
 {
 	Nit_hashentry **entry = hashmap_entry(map, key, key_size);
 
 	if (*entry)
-		return 0;
+		return nit_hashmap_present;
 
-	*entry = hashentry_new(key, key_size, storage);
+	pcheck((*entry = hashentry_new(key, key_size, storage)),
+	       nit_hashmap_no_mem);
 
-	if (++map->entry_num / map->bin_num >= BIN_MAX_DENSITY)
-		hashmap_rehash(map);
+	if (unlikely(hashmap_add_reduce(map)))
+		return nit_hashmap_no_mem;
 
-	return 1;
+	return NULL;
 }
 
 void
@@ -197,6 +213,7 @@ hashmap_remove(Nit_hashmap *map, void *key, uint32_t key_size)
 {
 	unsigned int row = murmur3_32(key, key_size, HASH_SEED) % map->bin_num;
 	Nit_hashentry *entry = map->bins[row].first;
+	Nit_hashentry *prev;
 
 	if (!entry)
 		return;
@@ -209,8 +226,7 @@ hashmap_remove(Nit_hashmap *map, void *key, uint32_t key_size)
 		return;
 	}
 
-	Nit_hashentry *prev = entry;
-
+        prev = entry;
 	entry = LIST_NEXT(entry);
 
 	foreach (entry) {
@@ -258,13 +274,15 @@ rehash_add(Nit_hashbin *bin, Nit_hashentry *entry)
         LIST_CONS(tmp, entry);
 }
 
-void
+int
 hashmap_rehash(Nit_hashmap *map)
 {
-	unsigned int i;
-	unsigned int new_bin_num = map->primes_pointer[1];
-	Nit_hashbin *new_bins = malloc(sizeof(*new_bins) * new_bin_num);
+	int i;
+	int new_bin_num = map->primes_pointer[1];
 	Nit_hashbin *bin = map->bins;
+	Nit_hashbin *new_bins = palloc_a(new_bins, new_bin_num);
+
+	pcheck(new_bins, 1);
 
 	for (i = 0; i != new_bin_num; ++i)
 		new_bins[i].first = NULL;
@@ -285,4 +303,6 @@ hashmap_rehash(Nit_hashmap *map)
 	map->bins = new_bins;
 	++map->primes_pointer;
 	map->bin_num = new_bin_num;
+
+	return 0;
 }

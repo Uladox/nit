@@ -18,6 +18,8 @@
 #include <stdlib.h>
 
 #define NIT_SHORT_NAMES
+#include "macros.h"
+#include "palloc.h"
 #include "list.h"
 #include "hashmap.h"
 #include "bimap.h"
@@ -30,8 +32,9 @@ nit_bimap_new(unsigned int lsequence, Nit_map_cmp lcompare,
 	      unsigned int rsequence, Nit_map_cmp rcompare,
 	      Nit_map_free rfree_contents)
 {
-	Nit_bimap *map = malloc(sizeof(*map));
+	Nit_bimap *map = palloc(map);
 
+	pcheck(map, NULL);
 	map->left = hashmap_new(lsequence, lcompare, lfree_contents);
 	map->right = hashmap_new(rsequence, rcompare, rfree_contents);
 
@@ -46,14 +49,17 @@ nit_bimap_free(Nit_bimap *map)
         free(map);
 }
 
-void
+const char *
 nit_bimap_add(Nit_bimap *map,
 	      void *lkey, uint32_t lsize, void *rkey, uint32_t rsize)
 {
 	Nit_hashentry **lentry = hashmap_entry(map->left, lkey, lsize);
 	Nit_hashentry **rentry = hashmap_entry(map->right, rkey, rsize);
-	Nit_entry_list *lstorage = malloc(sizeof(*lstorage));
-	Nit_entry_list *rstorage = malloc(sizeof(*rstorage));
+	Nit_entry_list *lstorage = palloc(lstorage);
+	Nit_entry_list *rstorage = palloc(rstorage);
+
+	pcheck_c(lstorage, nit_hashmap_no_mem, free(rstorage));
+	pcheck_c(rstorage, nit_hashmap_no_mem, free(lstorage));
 
 	if (!*lentry)
 		*lentry = hashentry_new(lkey, lsize, NULL);
@@ -70,14 +76,12 @@ nit_bimap_add(Nit_bimap *map,
 	(*rentry)->storage = rstorage;
 
 	if (!LIST_NEXT(*lentry))
-	        if (++map->left->entry_num / map->left->bin_num
-		    >= BIN_MAX_DENSITY)
-			hashmap_rehash(map->left);
+		if (unlikely(hashmap_add_reduce(map->left)))
+			return nit_hashmap_no_mem;
 
 	if (!LIST_NEXT(*rentry))
-		if (++map->right->entry_num / map->right->bin_num
-		    >= BIN_MAX_DENSITY)
-			hashmap_rehash(map->right);
+		if (unlikely(hashmap_add_reduce(map->right)))
+			return nit_hashmap_no_mem;
 
+	return NULL;
 }
-

@@ -40,7 +40,7 @@ nit_bimap_new(unsigned int lsequence, Nit_map_cmp lcompare,
 void
 nit_bimap_free(Nit_bimap *map);
 
-void
+const char *
 nit_bimap_add(Nit_bimap *map,
 	      void *lkey, uint32_t lsize, void *rkey, uint32_t rsize);
 
@@ -57,9 +57,9 @@ nit_bimap_rget(Nit_bimap *map, const void *key, uint32_t size)
 }
 
 #if defined NIT_SHORT_NAMES || defined NIT_BIMAP_SHORT_NAMES
-#define bimap_new(...) nit_bimap_new(__VA_ARGS__)
-#define bimap_free(...) nit_bimap_free(__VA_ARGS__)
-#define bimap_add(...) nit_bimap_add(__VA_ARGS__)
-#define bimap_lget(...) nit_bimap_lget(__VA_ARGS__)
-#define bimap_rget(...) nit_bimap_rget(__VA_ARGS__)
+# define bimap_new(...)  nit_bimap_new(__VA_ARGS__)
+# define bimap_free(...) nit_bimap_free(__VA_ARGS__)
+# define bimap_add(...)  nit_bimap_add(__VA_ARGS__)
+# define bimap_lget(...) nit_bimap_lget(__VA_ARGS__)
+# define bimap_rget(...) nit_bimap_rget(__VA_ARGS__)
 #endif

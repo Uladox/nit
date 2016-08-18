@@ -6,7 +6,7 @@ SRC = hashmap.c maputils.c socket.c bimap.c io.c
 OBJ = $(SRC:.c=.o)
 
 LIB = libnit.a
-INC = list.h maputils.h hashmap.h socket.h bimap.h io.h palloc.h
+INC = list.h maputils.h hashmap.h socket.h bimap.h io.h palloc.h macros.h
 
 all: $(LIB)
 

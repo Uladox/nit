@@ -38,7 +38,7 @@ typedef void(*Nit_map_free)(void *key, void *storage);
 typedef struct {
 	Nit_map_cmp compare;
 	Nit_map_free free_contents;
-	unsigned int bin_num;
+        int bin_num;
 	int entry_num;
 	const int *primes_pointer;
 	Nit_hashbin *bins;
@@ -58,6 +58,12 @@ Nit_hashentry **
 nit_hashmap_entry(Nit_hashmap *map, void *key, uint32_t key_size);
 
 int
+nit_hashmap_add_reduce(Nit_hashmap *map);
+
+extern const char *nit_hashmap_present;
+extern const char *nit_hashmap_no_mem;
+
+const char *
 nit_hashmap_add(Nit_hashmap *hashmap, void *key,
 		uint32_t key_size, void *storage);
 
@@ -67,16 +73,17 @@ nit_hashmap_remove(Nit_hashmap *map, void *key, uint32_t key_size);
 void *
 nit_hashmap_get(const Nit_hashmap *map, const void *key, uint32_t key_size);
 
-void
+int
 nit_hashmap_rehash(Nit_hashmap *map);
 
 #if defined NIT_SHORT_NAMES || defined NIT_HASHMAP_SHORT_NAMES
-#define hashentry_new(...) nit_hashentry_new(__VA_ARGS__)
-#define hashmap_new(...) nit_hashmap_new(__VA_ARGS__)
-#define hashmap_free(...) nit_hashmap_free(__VA_ARGS__)
-#define hashmap_entry(...) nit_hashmap_entry(__VA_ARGS__)
-#define hashmap_add(...) nit_hashmap_add(__VA_ARGS__)
-#define hashmap_remove(...) nit_hashmap_remove(__VA_ARGS__)
-#define hashmap_get(...) nit_hashmap_get(__VA_ARGS__)
-#define hashmap_rehash(...) nit_hashmap_rehash(__VA_ARGS__)
+# define hashentry_new(...)      nit_hashentry_new(__VA_ARGS__)
+# define hashmap_new(...)        nit_hashmap_new(__VA_ARGS__)
+# define hashmap_free(...)       nit_hashmap_free(__VA_ARGS__)
+# define hashmap_entry(...)      nit_hashmap_entry(__VA_ARGS__)
+# define hashmap_add_reduce(...) nit_hashmap_add_reduce(__VA_ARGS__)
+# define hashmap_add(...)        nit_hashmap_add(__VA_ARGS__)
+# define hashmap_remove(...)     nit_hashmap_remove(__VA_ARGS__)
+# define hashmap_get(...)        nit_hashmap_get(__VA_ARGS__)
+# define hashmap_rehash(...)     nit_hashmap_rehash(__VA_ARGS__)
 #endif

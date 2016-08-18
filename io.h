@@ -29,6 +29,6 @@ nit_get_encoded(const char *charset, const uint8_t *src, size_t src_size,
 		char **result, size_t *result_size);
 
 #if defined NIT_SHORT_NAMES || defined NIT_IO_SHORT_NAMES
-#define get_u8(...) nit_get_u8(__VA_ARGS__)
-#define get_encoded(...) nit_get_encoded(__VA_ARGS__)
+# define get_u8(...)      nit_get_u8(__VA_ARGS__)
+# define get_encoded(...) nit_get_encoded(__VA_ARGS__)
 #endif

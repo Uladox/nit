@@ -34,9 +34,9 @@ typedef struct {
 	     TMP = LIST, LIST ? (LIST = NIT_LIST_NEXT(LIST)) : NULL)
 
 #if defined NIT_SHORT_NAMES || defined NIT_LIST_SHORT_NAMES
-#define LIST_NEXT(LIST) NIT_LIST_NEXT(LIST)
-#define LIST_CONS(LIST, END) NIT_LIST_CONS(LIST, END)
-#define NEXT_REF(LIST) NIT_NEXT_REF(LIST)
-#define foreach(LIST) nit_foreach(LIST)
-#define delayed_foreach(TMP, LIST) nit_delayed_foreach(TMP, LIST)
+# define LIST_NEXT(LIST)            NIT_LIST_NEXT(LIST)
+# define LIST_CONS(LIST, END)       NIT_LIST_CONS(LIST, END)
+# define NEXT_REF(LIST)             NIT_NEXT_REF(LIST)
+# define foreach(LIST)              nit_foreach(LIST)
+# define delayed_foreach(TMP, LIST) nit_delayed_foreach(TMP, LIST)
 #endif
