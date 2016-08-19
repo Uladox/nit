@@ -17,18 +17,18 @@
 /* Include these
  * #include <stdint.h>
  * #include "list.h"
- * #include "hashmap.h"
+ * #include "hmap.h"
  */
 
 
 typedef struct {
-        Nit_hashmap *left;
-        Nit_hashmap *right;
+        Nit_hmap *left;
+        Nit_hmap *right;
 } Nit_bimap;
 
 typedef struct {
         Nit_list next;
-	Nit_hashentry *entry;
+	Nit_hentry *entry;
 } Nit_entry_list;
 
 Nit_bimap *
@@ -47,13 +47,13 @@ nit_bimap_add(Nit_bimap *map,
 static inline Nit_entry_list *
 nit_bimap_lget(Nit_bimap *map, const void *key, uint32_t size)
 {
-	return nit_hashmap_get(map->left, key, size);
+	return nit_hmap_get(map->left, key, size);
 }
 
 static inline Nit_entry_list *
 nit_bimap_rget(Nit_bimap *map, const void *key, uint32_t size)
 {
-	return nit_hashmap_get(map->right, key, size);
+	return nit_hmap_get(map->right, key, size);
 }
 
 #if defined NIT_SHORT_NAMES || defined NIT_BIMAP_SHORT_NAMES

@@ -26,6 +26,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include "macros.h"
 #include "palloc.h"
 #include "socket.h"
 

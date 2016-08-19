@@ -23,12 +23,12 @@
 #include "macros.h"
 #include "palloc.h"
 #include "list.h"
-#include "hashmap.h"
+#include "hmap.h"
 
 #define BIN_MAX_DENSITY 5
-#define HASH_SEED 37
+#define H_SEED 37
 
-static const int hashmap_primes[] = {
+static const int hmap_primes[] = {
 	8 + 3, 16 + 3, 32 + 5, 64 + 3, 128 + 3, 256 + 27, 512 + 9,
 	1024 + 9, 2048 + 5, 4096 + 3, 8192 + 27, 16384 + 43, 32768 + 3,
 	65536 + 45, 131072 + 29, 262144 + 3, 524288 + 21, 1048576 + 7,
@@ -37,7 +37,7 @@ static const int hashmap_primes[] = {
 	1073741824 + 85, 0
 };
 
-void rehash(Nit_hashmap *map);
+void rehash(Nit_hmap *map);
 
 #define ROT32(x, y) ((x << y) | (x >> (32 - y)))
 uint32_t
@@ -50,7 +50,7 @@ murmur3_32(const char *key, uint32_t len, uint32_t seed)
 	static const uint32_t m = 5;
 	static const uint32_t n = 0xe6546b64;
 
-	uint32_t hash = seed;
+	uint32_t h = seed;
 
 	const int nblocks = len / 4;
 	const uint32_t *blocks = (const uint32_t *) key;
@@ -63,8 +63,8 @@ murmur3_32(const char *key, uint32_t len, uint32_t seed)
 		k = ROT32(k, r1);
 		k *= c2;
 
-		hash ^= k;
-		hash = ROT32(hash, r2) * m + n;
+		h ^= k;
+		h = ROT32(h, r2) * m + n;
 	}
 
 	const uint8_t *tail = (const uint8_t *) (key + nblocks * 4);
@@ -81,23 +81,23 @@ murmur3_32(const char *key, uint32_t len, uint32_t seed)
 		k1 *= c1;
 		k1 = ROT32(k1, r1);
 		k1 *= c2;
-		hash ^= k1;
+		h ^= k1;
 	}
 
-	hash ^= len;
-	hash ^= (hash >> 16);
-	hash *= 0x85ebca6b;
-	hash ^= (hash >> 13);
-	hash *= 0xc2b2ae35;
-	hash ^= (hash >> 16);
+	h ^= len;
+	h ^= (h >> 16);
+	h *= 0x85ebca6b;
+	h ^= (h >> 13);
+	h *= 0xc2b2ae35;
+	h ^= (h >> 16);
 
-	return hash;
+	return h;
 }
 
-Nit_hashentry *
-hashentry_new(void *key, uint32_t key_size, void *storage)
+Nit_hentry *
+hentry_new(void *key, uint32_t key_size, void *storage)
 {
-	Nit_hashentry *entry = palloc(entry);
+	Nit_hentry *entry = palloc(entry);
 
 	pcheck(entry, NULL);
 	entry->key = key;
@@ -108,25 +108,25 @@ hashentry_new(void *key, uint32_t key_size, void *storage)
 	return entry;
 }
 
-Nit_hashmap *
-nit_hashmap_new(unsigned int sequence, Nit_map_cmp compare,
-		Nit_map_free free_contents)
+Nit_hmap *
+hmap_new(unsigned int sequence, Nit_map_cmp compare,
+	 Nit_map_free free_contents)
 {
 	int i = 0;
-	Nit_hashbin *bin;
-	Nit_hashmap *map = palloc(map);
+	Nit_hbin *bin;
+	Nit_hmap *map = palloc(map);
 
 	pcheck(map, NULL);
 	map->compare = compare;
 	map->free_contents = free_contents;
-	map->bin_num = hashmap_primes[sequence];
-	map->bins = malloc(sizeof(*map->bins) * hashmap_primes[sequence]);
+	map->bin_num = hmap_primes[sequence];
+	map->bins = malloc(sizeof(*map->bins) * hmap_primes[sequence]);
 	map->entry_num = 0;
-	map->primes_pointer = hashmap_primes;
+	map->primes_pointer = hmap_primes;
 	bin = map->bins;
 
 
-	for (; i != hashmap_primes[sequence]; ++i) {
+	for (; i != hmap_primes[sequence]; ++i) {
 		bin->first = NULL;
 		++bin;
 	}
@@ -135,15 +135,15 @@ nit_hashmap_new(unsigned int sequence, Nit_map_cmp compare,
 }
 
 void
-hashmap_free(Nit_hashmap *map)
+hmap_free(Nit_hmap *map)
 {
-	Nit_hashbin *bin = map->bins;
+	Nit_hbin *bin = map->bins;
 
 	int i;
 
 	for (i = 0; i != map->bin_num; ++i, ++bin) {
-		Nit_hashentry *entry = bin->first;
-		Nit_hashentry *tmp;
+		Nit_hentry *entry = bin->first;
+		Nit_hentry *tmp;
 
 		delayed_foreach (tmp, entry) {
 			map->free_contents(tmp->key, tmp->storage);
@@ -155,20 +155,20 @@ hashmap_free(Nit_hashmap *map)
 	free(map);
 }
 
-Nit_hashentry **
-hashmap_entry(Nit_hashmap *map, void *key, uint32_t key_size)
+Nit_hentry **
+hmap_entry(Nit_hmap *map, void *key, uint32_t key_size)
 {
-	Nit_hashentry *entry;
+	Nit_hentry *entry;
 	unsigned int row;
 
-	row = murmur3_32(key, key_size, HASH_SEED) % map->bin_num;
+	row = murmur3_32(key, key_size, H_SEED) % map->bin_num;
 	entry = map->bins[row].first;
 
 	if (!entry || map->compare(entry->key, entry->key_size, key, key_size))
 		return &map->bins[row].first;
 
         foreach (entry) {
-		Nit_hashentry *next = LIST_NEXT(entry);
+		Nit_hentry *next = LIST_NEXT(entry);
 
 		if (!next || map->compare(next->key, next->key_size,
 					 key, key_size))
@@ -179,41 +179,41 @@ hashmap_entry(Nit_hashmap *map, void *key, uint32_t key_size)
 }
 
 int
-hashmap_add_reduce(Nit_hashmap *map)
+hmap_add_reduce(Nit_hmap *map)
 {
 	if (++map->entry_num / map->bin_num >= BIN_MAX_DENSITY)
-		return hashmap_rehash(map);
+		return hmap_rehash(map);
 
 	return 0;
 }
 
-const char *nit_hashmap_present = "nit hashmap already contains element";
-const char *nit_hashmap_no_mem  = "nit hashmap could not allocate memory";
+const char *nit_hmap_present = "nit hmap already contains element";
+const char *nit_hmap_no_mem  = "nit hmap could not allocate memory";
 
 const char *
-hashmap_add(Nit_hashmap *map, void *key, uint32_t key_size,
-	    void *storage)
+hmap_add(Nit_hmap *map, void *key, uint32_t key_size,
+	 void *storage)
 {
-	Nit_hashentry **entry = hashmap_entry(map, key, key_size);
+	Nit_hentry **entry = hmap_entry(map, key, key_size);
 
 	if (*entry)
-		return nit_hashmap_present;
+		return nit_hmap_present;
 
-	pcheck((*entry = hashentry_new(key, key_size, storage)),
-	       nit_hashmap_no_mem);
+	pcheck((*entry = hentry_new(key, key_size, storage)),
+	       nit_hmap_no_mem);
 
-	if (unlikely(hashmap_add_reduce(map)))
-		return nit_hashmap_no_mem;
+	if (unlikely(hmap_add_reduce(map)))
+		return nit_hmap_no_mem;
 
 	return NULL;
 }
 
 void
-hashmap_remove(Nit_hashmap *map, void *key, uint32_t key_size)
+hmap_remove(Nit_hmap *map, void *key, uint32_t key_size)
 {
-	unsigned int row = murmur3_32(key, key_size, HASH_SEED) % map->bin_num;
-	Nit_hashentry *entry = map->bins[row].first;
-	Nit_hashentry *prev;
+	unsigned int row = murmur3_32(key, key_size, H_SEED) % map->bin_num;
+	Nit_hentry *entry = map->bins[row].first;
+	Nit_hentry *prev;
 
 	if (!entry)
 		return;
@@ -242,10 +242,10 @@ hashmap_remove(Nit_hashmap *map, void *key, uint32_t key_size)
 }
 
 void *
-hashmap_get(const Nit_hashmap *map, const void *key, uint32_t key_size)
+hmap_get(const Nit_hmap *map, const void *key, uint32_t key_size)
 {
-	unsigned int row = murmur3_32(key, key_size, HASH_SEED) % map->bin_num;
-	Nit_hashentry *entry = map->bins[row].first;
+	unsigned int row = murmur3_32(key, key_size, H_SEED) % map->bin_num;
+	Nit_hentry *entry = map->bins[row].first;
 
         foreach (entry)
 		if (map->compare(entry->key, entry->key_size, key, key_size))
@@ -254,11 +254,11 @@ hashmap_get(const Nit_hashmap *map, const void *key, uint32_t key_size)
 	return NULL;
 }
 
-/* Adds to a bin something already in the hashmap during a rehash */
+/* Adds to a bin something already in the hmap during a reh */
 static void
-rehash_add(Nit_hashbin *bin, Nit_hashentry *entry)
+rehash_add(Nit_hbin *bin, Nit_hentry *entry)
 {
-	Nit_hashentry *tmp = bin->first;
+	Nit_hentry *tmp = bin->first;
 
         LIST_CONS(entry, NULL);
 
@@ -275,12 +275,12 @@ rehash_add(Nit_hashbin *bin, Nit_hashentry *entry)
 }
 
 int
-hashmap_rehash(Nit_hashmap *map)
+hmap_rehash(Nit_hmap *map)
 {
 	int i;
 	int new_bin_num = map->primes_pointer[1];
-	Nit_hashbin *bin = map->bins;
-	Nit_hashbin *new_bins = palloc_a(new_bins, new_bin_num);
+	Nit_hbin *bin = map->bins;
+	Nit_hbin *new_bins = palloc_a(new_bins, new_bin_num);
 
 	pcheck(new_bins, 1);
 
@@ -288,12 +288,12 @@ hashmap_rehash(Nit_hashmap *map)
 		new_bins[i].first = NULL;
 
 	for (i = 0; i != map->bin_num; ++i, ++bin) {
-		Nit_hashentry *entry = bin->first;
-		Nit_hashentry *tmp;
+		Nit_hentry *entry = bin->first;
+		Nit_hentry *tmp;
 
 		delayed_foreach (tmp, entry) {
 			uint32_t row = murmur3_32(tmp->key, tmp->key_size,
-						  HASH_SEED) % new_bin_num;
+						  H_SEED) % new_bin_num;
 
 			rehash_add(new_bins + row, tmp);
 		}

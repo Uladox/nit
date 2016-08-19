@@ -17,7 +17,7 @@
 /* Include these
  * #include <stdint.h>
  * #include <stdio.h>
- * #include "hashmap.h"
+ * #include "hmap.h"
  */
 
 typedef struct {
@@ -25,8 +25,8 @@ typedef struct {
 	const char *compare;
 	void (*key_print)(FILE *file, void *key, uint32_t key_size);
 	void (*storage_print)(FILE *file, void *storage);
-} Nit_hashmap_out;
+} Nit_hmap_out;
 
 void
-nit_hashmap_out(Nit_hashmap *map, const char *name,
-		Nit_hashmap_out *out, FILE *file);
+nit_hmap_out(Nit_hmap *map, const char *name,
+	     Nit_hmap_out *out, FILE *file);

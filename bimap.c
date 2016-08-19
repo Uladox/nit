@@ -21,7 +21,7 @@
 #include "macros.h"
 #include "palloc.h"
 #include "list.h"
-#include "hashmap.h"
+#include "hmap.h"
 #include "bimap.h"
 
 #define BIN_MAX_DENSITY 10
@@ -35,8 +35,8 @@ nit_bimap_new(unsigned int lsequence, Nit_map_cmp lcompare,
 	Nit_bimap *map = palloc(map);
 
 	pcheck(map, NULL);
-	map->left = hashmap_new(lsequence, lcompare, lfree_contents);
-	map->right = hashmap_new(rsequence, rcompare, rfree_contents);
+	map->left = hmap_new(lsequence, lcompare, lfree_contents);
+	map->right = hmap_new(rsequence, rcompare, rfree_contents);
 
 	return map;
 }
@@ -44,8 +44,8 @@ nit_bimap_new(unsigned int lsequence, Nit_map_cmp lcompare,
 void
 nit_bimap_free(Nit_bimap *map)
 {
-	hashmap_free(map->left);
-	hashmap_free(map->right);
+	hmap_free(map->left);
+	hmap_free(map->right);
         free(map);
 }
 
@@ -53,19 +53,19 @@ const char *
 nit_bimap_add(Nit_bimap *map,
 	      void *lkey, uint32_t lsize, void *rkey, uint32_t rsize)
 {
-	Nit_hashentry **lentry = hashmap_entry(map->left, lkey, lsize);
-	Nit_hashentry **rentry = hashmap_entry(map->right, rkey, rsize);
+	Nit_hentry **lentry = hmap_entry(map->left, lkey, lsize);
+	Nit_hentry **rentry = hmap_entry(map->right, rkey, rsize);
 	Nit_entry_list *lstorage = palloc(lstorage);
 	Nit_entry_list *rstorage = palloc(rstorage);
 
-	pcheck_c(lstorage, nit_hashmap_no_mem, free(rstorage));
-	pcheck_c(rstorage, nit_hashmap_no_mem, free(lstorage));
+	pcheck_c(lstorage, nit_hmap_no_mem, free(rstorage));
+	pcheck_c(rstorage, nit_hmap_no_mem, free(lstorage));
 
 	if (!*lentry)
-		*lentry = hashentry_new(lkey, lsize, NULL);
+		*lentry = hentry_new(lkey, lsize, NULL);
 
 	if (!*rentry)
-		*rentry = hashentry_new(rkey, rsize, NULL);
+		*rentry = hentry_new(rkey, rsize, NULL);
 
 	lstorage->entry = *rentry;
         LIST_CONS(lstorage, (*lentry)->storage);
@@ -76,12 +76,12 @@ nit_bimap_add(Nit_bimap *map,
 	(*rentry)->storage = rstorage;
 
 	if (!LIST_NEXT(*lentry))
-		if (unlikely(hashmap_add_reduce(map->left)))
-			return nit_hashmap_no_mem;
+		if (unlikely(hmap_add_reduce(map->left)))
+			return nit_hmap_no_mem;
 
 	if (!LIST_NEXT(*rentry))
-		if (unlikely(hashmap_add_reduce(map->right)))
-			return nit_hashmap_no_mem;
+		if (unlikely(hmap_add_reduce(map->right)))
+			return nit_hmap_no_mem;
 
 	return NULL;
 }

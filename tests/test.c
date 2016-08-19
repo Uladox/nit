@@ -5,28 +5,28 @@
 
 #define NIT_SHORT_NAMES
 #include "../list.h"
-#include "../hashmap.h"
+#include "../hmap.h"
 #include "../bimap.h"
 
 static int
-hashmap_compare(const void *entry_key, uint32_t entry_key_size,
-		const void *key, uint32_t key_size)
+hmap_compare(const void *entry_key, uint32_t entry_key_size,
+	     const void *key, uint32_t key_size)
 {
 	return (*(int *) entry_key) == (*(int *) key);
 }
 
 static void
-hashmap_free_contents(void *key, void *storage)
+hmap_free_contents(void *key, void *storage)
 {
 	free(key);
 	free(storage);
 }
 
 static MunitResult
-test_hashmap(const MunitParameter params[], void* data)
+test_hmap(const MunitParameter params[], void* data)
 {
-	struct nit_hashmap *map = hashmap_new(2, hashmap_compare,
-					      hashmap_free_contents);
+	Nit_hmap *map = hmap_new(2, hmap_compare,
+					      hmap_free_contents);
 	int i = 0;
 
 	(void) params;
@@ -37,18 +37,18 @@ test_hashmap(const MunitParameter params[], void* data)
 		int *storage = malloc(sizeof(i));
 
 		*storage = (*key = i);
-	        hashmap_add(map, key, sizeof(*key), storage);
+	        hmap_add(map, key, sizeof(*key), storage);
 	}
 
 	for (i = 0; i <= 500; ++i)
 		munit_assert_int(i, ==,
-				 *(int *) hashmap_get(map, &i, sizeof(i)));
+				 *(int *) hmap_get(map, &i, sizeof(i)));
 
 	i = 42;
-        hashmap_remove(map, &i, sizeof(i));
-	munit_assert_null(hashmap_get(map, &i, sizeof(i)));
+        hmap_remove(map, &i, sizeof(i));
+	munit_assert_null(hmap_get(map, &i, sizeof(i)));
 
-        hashmap_free(map);
+        hmap_free(map);
 	return MUNIT_OK;
 }
 
@@ -120,7 +120,7 @@ test_bimap(const MunitParameter params[], void* data)
 }
 
 static MunitTest test_suite_tests[] = {
-	{ (char *) "/hashmap", test_hashmap,
+	{ (char *) "/hmap", test_hmap,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ (char *) "/bimap", test_bimap,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
@@ -129,7 +129,7 @@ static MunitTest test_suite_tests[] = {
 };
 
 static const MunitSuite test_suite = {
-	(char*) "nitlib",
+	(char*) "nit",
 	test_suite_tests,
 	NULL,
 	1,
@@ -140,6 +140,6 @@ int
 main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 {
 	/* test_bimap(NULL, NULL); */
-	/* test_hashmap(NULL, NULL); */
+	/* test_hmap(NULL, NULL); */
 	return munit_suite_main(&test_suite, NULL, argc, argv);
 }
