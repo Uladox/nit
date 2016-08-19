@@ -19,11 +19,11 @@
 #include <stdio.h>
 
 #define NIT_SHORT_NAMES
+#include "macros.h"
 #include "list.h"
 #include "hmap.h"
-#include "maputils.h"
+#include "hmap-out.h"
 
-#define QUOTE(...) #__VA_ARGS__
 
 static const char *free_contents = QUOTE(
 	static void free_contents(void *key, void *storage)

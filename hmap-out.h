@@ -30,3 +30,7 @@ typedef struct {
 void
 nit_hmap_out(Nit_hmap *map, const char *name,
 	     Nit_hmap_out *out, FILE *file);
+
+#if defined NIT_SHORT_NAMES || defined NIT_HMAP_SHORT_NAMES
+# define hmap_out(...) nit_hmap_out(__VA_ARGS__)
+#endif
