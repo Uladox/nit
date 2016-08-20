@@ -10,40 +10,47 @@
 #include "gap-buf.h"
 
 static int
-buf_valid_pos(const Nit_buf *buf, ptrdiff_t pos)
+gap_valid_pos(const Nit_gap *gap, ptrdiff_t pos)
 {
-	return (pos >= 0) && (pos < (ptrdiff_t) buf->size);
+	return (pos >= 0) && (pos < (ptrdiff_t) gap->size);
 }
 
+
 int
-buf_init(Nit_buf *buf, size_t size)
+gap_init(Nit_gap *gap, size_t size)
 {
 	if (unlikely(size <= 0))
 		return 1;
 
-	buf->bytes = palloc_a0(buf->bytes, size);
-	pcheck(buf->bytes, 1);
-	buf->size = size;
+	gap->bytes = palloc_a0(gap->bytes, size);
+	pcheck(gap->bytes, 1);
+	gap->size = size;
+
+	gap->start = 0;
+	gap->end = size - 1;
 
 	return 0;
 }
 
 int
-gap_init(Nit_gap *gap, size_t size)
+nit_gap_clone(Nit_gap *clone, const Nit_gap *src)
 {
-	gap->start = 0;
-	gap->end = size - 1;
+	clone->start = src->start;
+	clone->end = src->end;
 
-	return buf_init(&gap->buf, size);
+	pcheck(clone->bytes = malloc(clone->size = src->size), 1);
+	memcpy(clone->bytes, src->bytes, src->size);
+
+	return 1;
 }
 
 static void
 gap_fprint(const Nit_gap *gap, FILE *file)
 {
 	fprintf(file, "%.*s%.*s\n",
-		(int) gap->start, gap->buf.bytes,
-		(int) (gap->buf.size - gap->end - 1),
-		gap->buf.bytes + gap->end + 1);
+		(int) gap->start, gap->bytes,
+		(int) (gap->size - gap->end - 1),
+		gap->bytes + gap->end + 1);
 }
 
 void
@@ -61,66 +68,83 @@ gap_hole_len(const Nit_gap *gap)
 size_t
 gap_len(const Nit_gap *gap)
 {
-	return gap->buf.size - gap_hole_len(gap);
+	return gap->size - gap_hole_len(gap);
+}
+
+int
+gap_move_f(Nit_gap *gap, size_t amount)
+{
+	ptrdiff_t pos;
+
+	if (unlikely(!gap_valid_pos(gap, pos = gap->end + amount)))
+		return 1;
+
+	for (; gap->end != pos; ++gap->start, ++gap->end)
+			gap->bytes[gap->start] = gap->bytes[gap->end];
+
+	return 0;
+}
+
+int
+gap_move_b(Nit_gap *gap, size_t amount)
+{
+	ptrdiff_t pos;
+
+	if (unlikely(!gap_valid_pos(gap, pos = gap->start - amount)))
+		return 1;
+
+	for (; gap->start != pos; --gap->start, --gap->end)
+			gap->bytes[gap->end] = gap->bytes[gap->start];
+
+	return 0;
 }
 
 int
 gap_move(Nit_gap *gap, ptrdiff_t amount)
 {
-	ptrdiff_t pos;
 
-	if (unlikely(!buf_valid_pos(&gap->buf, pos = gap->end + amount)))
-			return 1;
-
-	if (amount > 0) {
-		for (; gap->end != pos; ++gap->start, ++gap->end)
-			gap->buf.bytes[gap->start] = gap->buf.bytes[gap->end];
-	} else {
-		for (; gap->start != pos; --gap->start, --gap->end)
-			gap->buf.bytes[gap->end] = gap->buf.bytes[gap->start];
-	}
-
-	return 1;
+	return (amount > 0) ? gap_move_f(gap, amount)
+		: gap_move_b(gap, amount);
 }
 
 void
 gap_rewind(Nit_gap *gap)
 {
 	for(; gap->start != 0; --gap->start, --gap->end)
-		gap->buf.bytes[gap->end] = gap->buf.bytes[gap->start];
+		gap->bytes[gap->end] = gap->bytes[gap->start];
 
 	/* Once more now that we are at 0 */
-	gap->buf.bytes[gap->end] = gap->buf.bytes[0];
+	gap->bytes[gap->end] = gap->bytes[0];
 }
 
 void
 gap_to_end(Nit_gap *gap)
 {
-	const ptrdiff_t max_pos = gap->buf.size - 1;
+	const ptrdiff_t max_pos = gap->size - 1;
 
 	for(; gap->end < max_pos; ++gap->start, ++gap->end)
-		gap->buf.bytes[gap->start] = gap->buf.bytes[gap->end];
+		gap->bytes[gap->start] = gap->bytes[gap->end];
 
 	/* Once more now that we are at the end */
-	gap->buf.bytes[gap->start] = gap->buf.bytes[max_pos];
+	gap->bytes[gap->start] = gap->bytes[max_pos];
 }
 
 int
 gap_resize(Nit_gap *gap, size_t size)
 {
-	size_t added_size = gap->buf.size * 0.5 + size;
-	size_t new_size = gap->buf.size + added_size;
+	size_t added_size = gap->size * 0.5 + size;
+	size_t new_size = gap->size + added_size;
 	char *new_bytes = palloc_a0(new_bytes, new_size);
 
 	pcheck(new_bytes, 1);
-	memcpy(new_bytes, gap->buf.bytes, gap->start);
+	memcpy(new_bytes, gap->bytes, gap->start);
 	memcpy(new_bytes + added_size + gap->end + 1,
-	       gap->buf.bytes + gap->end + 1,
-	       gap->buf.size - gap->end - 1);
+	       gap->bytes + gap->end + 1,
+	       gap->size - gap->end - 1);
 	gap->end += added_size;
-	free(gap->buf.bytes);
-	gap->buf.bytes = new_bytes;
-	gap->buf.size = new_size;
+	free(gap->bytes);
+	gap->bytes = new_bytes;
+	gap->size = new_size;
 
 	return 0;
 }
@@ -134,7 +158,7 @@ gap_write(Nit_gap *gap, const void *data, size_t size)
 		return 1;
 
 	for (; count < size; ++count)
-		gap->buf.bytes[gap->start++] = ((char *) data)[count];
+		gap->bytes[gap->start++] = ((char *) data)[count];
 
 	return 0;
 }
@@ -142,9 +166,9 @@ gap_write(Nit_gap *gap, const void *data, size_t size)
 void
 gap_read(const Nit_gap *gap, void *data)
 {
-	memcpy(data, gap->buf.bytes, gap->start);
-	memcpy(data, gap->buf.bytes + gap->end + 1,
-	       gap->buf.size - gap->end - 1);
+	memcpy(data, gap->bytes, gap->start);
+	memcpy(data, gap->bytes + gap->end + 1,
+	       gap->size - gap->end - 1);
 }
 
 void
@@ -170,10 +194,10 @@ gap_str(const Nit_gap *gap)
 int
 gap_copy_f(const Nit_gap *gap, void *data, size_t size)
 {
-	if (unlikely(!buf_valid_pos(&gap->buf, gap->end + size)))
+	if (unlikely(!gap_valid_pos(gap, gap->end + size)))
 			return 1;
 
-	memcpy(data, gap->buf.bytes + (gap->end + 1), size);
+	memcpy(data, gap->bytes + (gap->end + 1), size);
 
 	return 0;
 }
@@ -181,10 +205,10 @@ gap_copy_f(const Nit_gap *gap, void *data, size_t size)
 int
 gap_copy_b(const Nit_gap *gap, void *data, size_t size)
 {
-	if (unlikely(!buf_valid_pos(&gap->buf, gap->start - size)))
+	if (unlikely(!gap_valid_pos(gap, gap->start - size)))
 			return 1;
 
-	memcpy(data, gap->buf.bytes + gap->start - size, size);
+	memcpy(data, gap->bytes + gap->start - size, size);
 
 	return 0;
 }
@@ -201,7 +225,7 @@ gap_cut_f(Nit_gap *gap, void *data, size_t size)
 }
 
 int
-nit_gap_cut_b(Nit_gap *gap, void *data, size_t size)
+gap_cut_b(Nit_gap *gap, void *data, size_t size)
 {
 	if (unlikely(gap_copy_b(gap, data, size)))
 		return 1;
@@ -212,11 +236,23 @@ nit_gap_cut_b(Nit_gap *gap, void *data, size_t size)
 }
 
 int
+gap_next(Nit_gap *gap, void *data, size_t size)
+{
+	return gap_copy_f(gap, data, size) || gap_move_f(gap, size);
+}
+
+int
+gap_prev(Nit_gap *gap, void *data, size_t size)
+{
+	return gap_copy_b(gap, data, size) || gap_move_b(gap, size);
+}
+
+int
 gap_erase_f(Nit_gap *gap, size_t amount)
 {
 	size_t pos;
 
-	if (unlikely(!buf_valid_pos(&gap->buf, pos = gap->end + amount)))
+	if (unlikely(!gap_valid_pos(gap, pos = gap->end + amount)))
 			return 1;
 
 	gap->end = pos;
@@ -229,7 +265,7 @@ gap_erase_b(Nit_gap *gap, size_t amount)
 {
 	size_t pos;
 
-	if (unlikely(!buf_valid_pos(&gap->buf, pos = gap->start - amount)))
+	if (unlikely(!gap_valid_pos(gap, pos = gap->start - amount)))
 			return 1;
 
 	gap->start = pos;
@@ -248,6 +284,6 @@ void
 gap_empty(Nit_gap *gap)
 {
 	gap->start = 0;
-	gap->end = gap->buf.size - 1;
+	gap->end = gap->size - 1;
 }
 
