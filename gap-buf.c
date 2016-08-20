@@ -9,8 +9,8 @@
 #include "palloc.h"
 #include "gap-buf.h"
 
-int
-buf_valid_pos(Nit_buf *buf, ptrdiff_t pos)
+static int
+buf_valid_pos(const Nit_buf *buf, ptrdiff_t pos)
 {
 	return (pos >= 0) && (pos < (ptrdiff_t) buf->size);
 }
@@ -35,6 +35,21 @@ gap_init(Nit_gap *gap, size_t size)
 	gap->end = size - 1;
 
 	return buf_init(&gap->buf, size);
+}
+
+static void
+gap_fprint(const Nit_gap *gap, FILE *file)
+{
+	fprintf(file, "%.*s%.*s\n",
+		(int) gap->start, gap->buf.bytes,
+		(int) (gap->buf.size - gap->end - 1),
+		gap->buf.bytes + gap->end + 1);
+}
+
+void
+gap_print(const Nit_gap *gap)
+{
+	gap_fprint(gap, stdout);
 }
 
 size_t
@@ -150,6 +165,50 @@ gap_str(const Nit_gap *gap)
 	str[size] = '\0';
 
 	return str;
+}
+
+int
+gap_copy_f(const Nit_gap *gap, void *data, size_t size)
+{
+	if (unlikely(!buf_valid_pos(&gap->buf, gap->end + size)))
+			return 1;
+
+	memcpy(data, gap->buf.bytes + (gap->end + 1), size);
+
+	return 0;
+}
+
+int
+gap_copy_b(const Nit_gap *gap, void *data, size_t size)
+{
+	if (unlikely(!buf_valid_pos(&gap->buf, gap->start - size)))
+			return 1;
+
+	memcpy(data, gap->buf.bytes + gap->start - size, size);
+
+	return 0;
+}
+
+int
+gap_cut_f(Nit_gap *gap, void *data, size_t size)
+{
+	if (unlikely(gap_copy_f(gap, data, size)))
+		return 1;
+
+	gap->end += size;
+
+	return 0;
+}
+
+int
+nit_gap_cut_b(Nit_gap *gap, void *data, size_t size)
+{
+	if (unlikely(gap_copy_b(gap, data, size)))
+		return 1;
+
+	gap->start -= size;
+
+	return 0;
 }
 
 int

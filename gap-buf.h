@@ -22,6 +22,9 @@ nit_buf_init(Nit_buf *buf, size_t size);
 int
 nit_gap_init(Nit_gap *gap, size_t size);
 
+void
+nit_gap_print(const Nit_gap *gap);
+
 size_t
 nit_gap_hole_len(const Nit_gap *gap);
 
@@ -50,6 +53,18 @@ char *
 nit_gap_str(const Nit_gap *gap);
 
 int
+nit_gap_copy_f(const Nit_gap *gap, void *data, size_t size);
+
+int
+nit_gap_copy_b(const Nit_gap *gap, void *data, size_t size);
+
+int
+nit_gap_cut_f(Nit_gap *gap, void *data, size_t size);
+
+int
+nit_gap_cut_b(Nit_gap *gap, void *data, size_t size);
+
+int
 nit_gap_erase_f(Nit_gap *gap, size_t amount);
 
 int
@@ -76,6 +91,7 @@ nit_gap_dispose(Nit_gap *gap)
 #if defined NIT_SHORT_NAMES || defined NIT_GAP_BUF_SHORT_NAMES
 # define buf_init(...)     nit_buf_init(__VA_ARGS__)
 # define gap_init(...)     nit_gap_init(__VA_ARGS__)
+# define gap_print(...)    nit_gap_print(__VA_ARGS__)
 # define gap_hole_len(...) nit_gap_hole_len(__VA_ARGS__)
 # define gap_len(...)      nit_gap_len(__VA_ARGS__)
 # define gap_move(...)     nit_gap_move(__VA_ARGS__)
@@ -85,7 +101,10 @@ nit_gap_dispose(Nit_gap *gap)
 # define gap_read(...)     nit_gap_read(__VA_ARGS__)
 # define gap_read_str(...) nit_gap_read_str(__VA_ARGS__)
 # define gap_str(...)      nit_gap_str(__VA_ARGS__)
-# define gap_erase_f(...)  nit_gap_erase_f(__VA_ARGS__)
+# define gap_copy_f(...)   nit_gap_copy_f(__VA_ARGS__)
+# define gap_copy_b(...)   nit_gap_copy_b(__VA_ARGS__)
+# define gap_cut_f(...)    nit_gap_cut_f(__VA_ARGS__)
+# define gap_cut_b(...)    nit_gap_cut_b(__VA_ARGS__)GS__)
 # define gap_erase_b(...)  nit_gap_erase_b(__VA_ARGS__)
 # define gap_erase(...)    nit_gap_erase(__VA_ARGS__)
 # define gap_empty(...)    nit_gap_empty(__VA_ARGS__)

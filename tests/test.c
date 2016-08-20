@@ -144,6 +144,8 @@ test_gap_buf(const MunitParameter params[], void* data)
 	gap_read(&gap, str2);
 	munit_assert_string_equal(str2, str1);
 
+	/* gap_print(&gap); */
+
 	/* Reset buffer */
 	gap_empty(&gap);
 
@@ -151,6 +153,8 @@ test_gap_buf(const MunitParameter params[], void* data)
 	munit_assert_false(gap_write(&gap, str3, sizeof(str3)));
 	gap_read(&gap, str4);
 	munit_assert_string_equal(str4, str3);
+
+	/* gap_print(&gap); */
 
 	/* Reset buffer in another way */
 	munit_assert_false(nit_gap_erase_b(&gap, sizeof(str4)));
@@ -165,6 +169,7 @@ test_gap_buf(const MunitParameter params[], void* data)
 	munit_assert_not_null(str7 = gap_str(&gap));
 	munit_assert_string_equal(str7, str5);
 
+	/* gap_print(&gap); */
 	free(str7);
 	gap_dispose(&gap);
 
