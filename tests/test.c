@@ -1,12 +1,16 @@
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "munit/munit.h"
 
 #define NIT_SHORT_NAMES
+#include "../macros.h"
 #include "../list.h"
 #include "../hmap.h"
 #include "../bimap.h"
+#include "../gap-buf.h"
 
 static int
 hmap_compare(const void *entry_key, uint32_t entry_key_size,
@@ -119,10 +123,60 @@ test_bimap(const MunitParameter params[], void* data)
 	return MUNIT_OK;
 }
 
+static MunitResult
+test_gap_buf(const MunitParameter params[], void* data)
+{
+	Nit_gap gap;
+	static const char str1[] = "hello, world";
+	char str2[ARRAY_UNITS(str1)];
+	static const char str3[] = " plus lots and lots and lots of words";
+	char str4[ARRAY_UNITS(str3)];
+
+	static const char str5[] =
+		"hello, world"
+		" plus lots and lots and lots of words";
+	char str6[ARRAY_UNITS(str5)];
+	char *str7;
+
+	munit_assert_false(gap_init(&gap, sizeof(str1)));
+
+	munit_assert_false(gap_write(&gap, str1, sizeof(str1)));
+	gap_read(&gap, str2);
+	munit_assert_string_equal(str2, str1);
+
+	/* Reset buffer */
+	gap_empty(&gap);
+
+	/* Check same with a buffer increase after empty */
+	munit_assert_false(gap_write(&gap, str3, sizeof(str3)));
+	gap_read(&gap, str4);
+	munit_assert_string_equal(str4, str3);
+
+	/* Reset buffer in another way */
+	munit_assert_false(nit_gap_erase_b(&gap, sizeof(str4)));
+
+	/* Try adding strings together */
+	munit_assert_false(gap_write(&gap, str1, sizeof(str1) - 1));
+	munit_assert_false(gap_write(&gap, str3, sizeof(str3) - 1));
+        gap_read_str(&gap, str6);
+	munit_assert_string_equal(str6, str5);
+
+	/* Check using another way to get string. */
+	munit_assert_not_null(str7 = gap_str(&gap));
+	munit_assert_string_equal(str7, str5);
+
+	free(str7);
+	gap_dispose(&gap);
+
+	return MUNIT_OK;
+}
+
 static MunitTest test_suite_tests[] = {
 	{ (char *) "/hmap", test_hmap,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ (char *) "/bimap", test_bimap,
+	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
+	{ (char *) "/gap-buf", test_gap_buf,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
 
@@ -141,5 +195,6 @@ main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 {
 	/* test_bimap(NULL, NULL); */
 	/* test_hmap(NULL, NULL); */
+	/* test_gap_buf(NULL, NULL); */
 	return munit_suite_main(&test_suite, NULL, argc, argv);
 }

@@ -8,6 +8,6 @@
 # define unlikely(val) (val)
 #endif
 
-#define ARRAY_SIZE(array) (sizeof(array) / sizeof(*array))
+#define ARRAY_UNITS(array) (sizeof(array) / sizeof(*array))
 
 #define QUOTE(...) #__VA_ARGS__
