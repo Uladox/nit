@@ -17,7 +17,7 @@ $(LIB): $(OBJ)
 	@$(CC) $(CFLAGS) -c $<
 
 install: $(LIB) $(INC)
-	@echo @ install nitlib to $(DESTDIR)$(PREFIX)
+	@echo @ install libnit to $(DESTDIR)$(PREFIX)
 	@mkdir -p $(DESTDIR)$(PREFIX)/lib
 	@cp $(LIB) $(DESTDIR)$(PREFIX)/lib/$(LIB)
 	@mkdir -p $(DESTDIR)$(PREFIX)/include/nit

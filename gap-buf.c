@@ -41,7 +41,7 @@ nit_gap_clone(Nit_gap *clone, const Nit_gap *src)
 	pcheck(clone->bytes = malloc(clone->size = src->size), 1);
 	memcpy(clone->bytes, src->bytes, src->size);
 
-	return 1;
+	return 0;
 }
 
 static void

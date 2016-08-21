@@ -103,6 +103,7 @@ nit_gap_empty(Nit_gap *gap);
 
 #if defined NIT_SHORT_NAMES || defined NIT_GAP_BUF_SHORT_NAMES
 # define gap_init(...)     nit_gap_init(__VA_ARGS__)
+# define gap_clone(...)    nit_gap_clone(__VA_ARGS__)
 # define gap_dispose(...)  nit_gap_dispose(__VA_ARGS__)
 # define gap_print(...)    nit_gap_print(__VA_ARGS__)
 # define gap_hole_len(...) nit_gap_hole_len(__VA_ARGS__)

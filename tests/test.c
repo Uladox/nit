@@ -126,7 +126,7 @@ test_bimap(const MunitParameter params[], void* data)
 static MunitResult
 test_gap_buf(const MunitParameter params[], void* data)
 {
-	Nit_gap gap;
+	Nit_gap clone;
 	static const char str1[] = "hello, world";
 	char str2[ARRAY_UNITS(str1)];
 	static const char str3[] = " plus lots and lots and lots of words";
@@ -137,6 +137,9 @@ test_gap_buf(const MunitParameter params[], void* data)
 		" plus lots and lots and lots of words";
 	char str6[ARRAY_UNITS(str5)];
 	char *str7;
+
+	Nit_gap gap;
+	char clone_str[ARRAY_UNITS(str5)];
 
 	munit_assert_false(gap_init(&gap, sizeof(str1)));
 
@@ -168,6 +171,11 @@ test_gap_buf(const MunitParameter params[], void* data)
 	/* Check using another way to get string. */
 	munit_assert_not_null(str7 = gap_str(&gap));
 	munit_assert_string_equal(str7, str5);
+
+	/* Tries cloning */
+        munit_assert_false(gap_clone(&clone, &gap));
+	gap_read_str(&clone, clone_str);
+	munit_assert_string_equal(clone_str, str5);
 
 	/* gap_print(&gap); */
 	free(str7);
