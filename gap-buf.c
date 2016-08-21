@@ -9,12 +9,23 @@
 #include "palloc.h"
 #include "gap-buf.h"
 
-static int
+static inline int
 gap_valid_pos(const Nit_gap *gap, ptrdiff_t pos)
 {
 	return (pos >= 0) && (pos < (ptrdiff_t) gap->size);
 }
 
+static inline size_t
+size_past_end(const Nit_gap *gap)
+{
+	return gap->size - gap->end - 1;
+}
+
+static inline const char *
+bytes_past_end(const Nit_gap *gap)
+{
+	return gap->bytes + gap->end + 1;
+}
 
 int
 gap_init(Nit_gap *gap, size_t size)
@@ -44,13 +55,52 @@ nit_gap_clone(Nit_gap *clone, const Nit_gap *src)
 	return 0;
 }
 
+int
+gap_replicate(Nit_gap *rep, Nit_gap *src)
+{
+	gap_empty(rep);
+
+	if (gap_resize(rep, src->size))
+		return 1;
+
+	memcpy(rep->bytes, src->bytes, rep->start = src->start);
+	memcpy(rep->bytes + (rep->end = src->end + (rep->size - src->size)),
+	       bytes_past_end(src),
+	       size_past_end(src));
+
+	return 0;
+}
+
+int
+gap_resize(Nit_gap *gap, size_t size)
+{
+	if (gap_hole_len(gap) > size)
+		return 0;
+
+	size_t added_size = gap->size * 0.5 + size;
+	size_t new_size = gap->size + added_size;
+	char *new_bytes = palloc_a0(new_bytes, new_size);
+
+	pcheck(new_bytes, 1);
+	memcpy(new_bytes, gap->bytes, gap->start);
+	memcpy(new_bytes + added_size + gap->end + 1,
+	       bytes_past_end(gap),
+	       size_past_end(gap));
+	gap->end += added_size;
+	free(gap->bytes);
+	gap->bytes = new_bytes;
+	gap->size = new_size;
+
+	return 0;
+}
+
 static void
 gap_fprint(const Nit_gap *gap, FILE *file)
 {
 	fprintf(file, "%.*s%.*s\n",
 		(int) gap->start, gap->bytes,
-		(int) (gap->size - gap->end - 1),
-		gap->bytes + gap->end + 1);
+		(int) size_past_end(gap),
+		bytes_past_end(gap));
 }
 
 void
@@ -130,31 +180,11 @@ gap_to_end(Nit_gap *gap)
 }
 
 int
-gap_resize(Nit_gap *gap, size_t size)
-{
-	size_t added_size = gap->size * 0.5 + size;
-	size_t new_size = gap->size + added_size;
-	char *new_bytes = palloc_a0(new_bytes, new_size);
-
-	pcheck(new_bytes, 1);
-	memcpy(new_bytes, gap->bytes, gap->start);
-	memcpy(new_bytes + added_size + gap->end + 1,
-	       gap->bytes + gap->end + 1,
-	       gap->size - gap->end - 1);
-	gap->end += added_size;
-	free(gap->bytes);
-	gap->bytes = new_bytes;
-	gap->size = new_size;
-
-	return 0;
-}
-
-int
 gap_write(Nit_gap *gap, const void *data, size_t size)
 {
 	size_t count = 0;
 
-	if (gap_hole_len(gap) < size && gap_resize(gap, size))
+	if (gap_resize(gap, size))
 		return 1;
 
 	for (; count < size; ++count)
@@ -167,8 +197,8 @@ void
 gap_read(const Nit_gap *gap, void *data)
 {
 	memcpy(data, gap->bytes, gap->start);
-	memcpy(data, gap->bytes + gap->end + 1,
-	       gap->size - gap->end - 1);
+	memcpy(data, bytes_past_end(gap),
+	       size_past_end(gap));
 }
 
 void
@@ -197,7 +227,7 @@ gap_copy_f(const Nit_gap *gap, void *data, size_t size)
 	if (unlikely(!gap_valid_pos(gap, gap->end + size)))
 			return 1;
 
-	memcpy(data, gap->bytes + (gap->end + 1), size);
+	memcpy(data, bytes_past_end(gap), size);
 
 	return 0;
 }
