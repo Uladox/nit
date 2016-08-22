@@ -180,6 +180,14 @@ gap_to_end(Nit_gap *gap)
 }
 
 int
+gap_gap_put(Nit_gap *des, const Nit_gap *src)
+{
+	return gap_write(des, src->bytes, src->start) ||
+		gap_write(des, bytes_past_end(src), size_past_end(src));
+}
+
+
+int
 gap_write(Nit_gap *gap, const void *data, size_t size)
 {
 	size_t count = 0;

@@ -64,6 +64,9 @@ nit_gap_to_end(Nit_gap *gap);
 /* Writing and Reading */
 
 int
+nit_gap_gap_put(Nit_gap *des, const Nit_gap *src);
+
+int
 nit_gap_write(Nit_gap *gap, const void *data, size_t size);
 
 void
@@ -121,6 +124,7 @@ nit_gap_empty(Nit_gap *gap);
 # define gap_move(...)      nit_gap_move(__VA_ARGS__)
 # define gap_rewind(...)    nit_gap_rewind(__VA_ARGS__)
 # define gap_to_end(...)    nit_gap_to_end(__VA_ARGS__)
+# define gap_gap_put(...)   nit_gap_gap_put(__VA_ARGS__)
 # define gap_write(...)     nit_gap_write(__VA_ARGS__)
 # define gap_read(...)      nit_gap_read(__VA_ARGS__)
 # define gap_read_str(...)  nit_gap_read_str(__VA_ARGS__)
