@@ -56,7 +56,7 @@ nit_gap_clone(Nit_gap *clone, const Nit_gap *src)
 }
 
 int
-gap_replicate(Nit_gap *rep, Nit_gap *src)
+gap_replicate(Nit_gap *rep, const Nit_gap *src)
 {
 	gap_empty(rep);
 

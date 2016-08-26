@@ -20,7 +20,7 @@ int
 nit_gap_clone(Nit_gap *clone, const Nit_gap *src);
 
 int
-nit_gap_replicate(Nit_gap *rep, Nit_gap *src);
+nit_gap_replicate(Nit_gap *rep, const Nit_gap *src);
 
 int
 nit_gap_resize(Nit_gap *gap, size_t size);
