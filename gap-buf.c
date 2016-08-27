@@ -129,8 +129,8 @@ gap_move_f(Nit_gap *gap, size_t amount)
 	if (unlikely(!gap_valid_pos(gap, pos = gap->end + amount)))
 		return 1;
 
-	for (; gap->end != pos; ++gap->start, ++gap->end)
-			gap->bytes[gap->start] = gap->bytes[gap->end];
+	while (gap->end != pos)
+		gap->bytes[gap->start++] = gap->bytes[++gap->end];
 
 	return 0;
 }
@@ -143,8 +143,8 @@ gap_move_b(Nit_gap *gap, size_t amount)
 	if (unlikely(!gap_valid_pos(gap, pos = gap->start - amount)))
 		return 1;
 
-	for (; gap->start != pos; --gap->start, --gap->end)
-			gap->bytes[gap->end] = gap->bytes[gap->start];
+	while (gap->start != pos)
+		gap->bytes[gap->end--] = gap->bytes[--gap->start];
 
 	return 0;
 }
