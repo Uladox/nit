@@ -245,7 +245,7 @@ void *
 hmap_get(const Nit_hmap *map, const void *key, uint32_t key_size)
 {
 	unsigned int row = murmur3_32(key, key_size, H_SEED) % map->bin_num;
-	Nit_hentry *entry = map->bins[row].first;
+	const Nit_hentry *entry = map->bins[row].first;
 
         foreach (entry)
 		if (map->compare(entry->key, entry->key_size, key, key_size))
