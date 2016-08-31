@@ -1,54 +1,63 @@
+/* Include these
+ * #include <stddef.h> or <stdio.h> or <stdlib.h>
+ * #include "list.h"
+ */
 
-enum nit_gc_ercu {
-	NIT_GC_COLOR1,
-	NIT_GC_COLOR2
-};
-
-typedef struct {
-	Nit_dlist list;
-	enum nit_gc_ercu color;
-	void *data;
-} Nit_gclist;
-
-/* Nit garbage collector cycle
- *                                  <--
- *           Scan               Scan   Checked
+/*               Nit garbage collector
+ *
+ *        -|Regions|-           -|Pointers|-
+ *
+ *                                  <-- [puts scanned into checked]
+ *         < scan               scan   check
  *          /    \                  \ /
- * Unchecked      Checked            X
+ * v uncheck      check ^            X
  *          \    /                  / \
- *           Free          Unchecked   Free
- *                                  <--
+ *           free >          uncheck   free
+ *                                  <-- [puts free into checked]
+ *
+ *          < scan
+ *              |
+ *     [uncheck]|[scan]
+ * v uncheck----+---- check ^
+ *        [free]|[check]
+ *              |
+ *            free >
+ *
+ *       < scan/check          < uncheck/scan/check
+ *             |                          |
+ *            .^.         ===>            ^.
+ *           /	 \                          \
+ *  v uncheck     free ^                     free ^
  */
 
 typedef struct {
-	enum nit_gc_ercu black;
+	Nit_dlist list;
+	int color;
+	void *data;
+} Nit_gclist;
+
+typedef struct {
+        int white;
 	Nit_gclist *scan;    /* grey */
 	Nit_gclist *check;   /* black */
 	Nit_gclist *free;    /* white */
 	Nit_gclist *uncheck; /* ercu */
-	int (*dat_free)(void *data);
+
+	int (*dat_free)(void *data); /* Frees set data, not pointer. */
+
+	void *iter; /* Iterator for real-time gc. */
+	/* Marks returned pointer. */
+	void *(*next)(Nit_gclist *scan, void *iter);
 } Nit_gc;
 
 void *
-nit_gc_alloc(Nit_gc *gc, size_t size)
-{
-	Nit_gclist *list;
-	void *data = malloc(size + sizeof(list));
+nit_gc_malloc(Nit_gc *gc, size_t size);
 
-	pcheck(data, NULL);
+void *
+nit_gc_calloc(Nit_gc *gc, size_t size);
 
-	if (gc->free != gc->uncheck) {
-		list = gc->free;
-		gc->free = DLIST_PREV(gc->free);
-		goto end;
-	}
+void
+nit_gc_free(Nit_gc *gc, void *data);
 
-	pcheck_c((list = palloc(list)), NULL, free(data));
-	dlist_put_after(gc->free, list);
-
-end:
-	list->color = gc->black;
-	*((Nit_gclist **) data) = list;
-	list->data = ((Nit_gclist **) data) + 1;
-	return list->data;
-}
+void
+nit_gc_collect_1(Nit_gc *gc);

@@ -2,11 +2,12 @@
 
 include config.mk
 
-SRC = hmap.c hmap-out.c socket.c bimap.c io.c gap-buf.c
+SRC = hmap.c hmap-out.c socket.c bimap.c io.c gap-buf.c gc.c
 OBJ = $(SRC:.c=.o)
 
 LIB = libnit.a
-INC = list.h hmap-out.h hmap.h socket.h bimap.h io.h palloc.h macros.h gap-buf.h
+INC = list.h hmap-out.h hmap.h socket.h bimap.h io.h palloc.h macros.h \
+      gap-buf.h gc.h
 
 all: $(LIB)
 
