@@ -6,37 +6,27 @@
 #include "list.h"
 #include "gc.h"
 
-static inline void
-place_free(Nit_gc *gc, Nit_gclist *list)
-{
-	dlist_move_a(list, gc->uncheck);
-}
-
-static inline void
-place_scan(Nit_gc *gc, Nit_gclist *list)
-{
-	dlist_move_a(list, gc->scan);
-}
-
-static inline void
-place_check(Nit_gc *gc, Nit_gclist *list)
-{
-	dlist_move_a(list, gc->free);
-}
 
 static void *
 nit_gc_place(Nit_gc *gc, void *data)
 {
 	Nit_gclist *list;
 
-	if (gc->free != gc->uncheck) {
+	if (gc->free) {
 		list = gc->free;
 		gc->free = DLIST_PREV(gc->free);
 		goto end;
 	}
 
 	pcheck_c((list = palloc(list)), NULL, free(data));
-	place_check(gc, list);
+
+	if (gc->check_end) {
+		dlist_put_after(list, gc->check_end);
+	} else {
+		gc->check = gc->check_end = list;
+		LIST_CONS(list, NULL);
+		DLIST_RCONS(list, NULL);
+	}
 
 end:
 	list->color = !gc->white;
@@ -71,9 +61,16 @@ nit_gc_free(Nit_gc *gc, void *data)
 	Nit_gclist **place = ((Nit_gclist **) data) - 1;
 	Nit_gclist *list = *place;
 
-	gc->dat_free(data);
 	free(place);
-	place_free(gc, list);
+
+	if (gc->free) {
+		dlist_move_b(list, gc->free);
+		return;
+	}
+
+	gc->free = list;
+	DLIST_RCONS(list, NULL);
+	LIST_CONS(list, NULL);
 }
 
 static inline Nit_gclist *

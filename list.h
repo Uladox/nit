@@ -64,8 +64,11 @@ nit_dlist_remove(void *list)
 	 * |list->prev|      |list->next|
 	 * +----------+ <--- +----------+
 	 */
-	NIT_LIST_CONS(NIT_DLIST_PREV(list), NIT_LIST_NEXT(list));
-	NIT_DLIST_RCONS(NIT_LIST_NEXT(list), NIT_DLIST_PREV(list));
+	if (NIT_DLIST_PREV(list))
+		NIT_LIST_CONS(NIT_DLIST_PREV(list), NIT_LIST_NEXT(list));
+
+	if (NIT_LIST_NEXT(list))
+		NIT_DLIST_RCONS(NIT_LIST_NEXT(list), NIT_DLIST_PREV(list));
 }
 
 static inline void

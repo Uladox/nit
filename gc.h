@@ -3,45 +3,19 @@
  * #include "list.h"
  */
 
-/*               Nit garbage collector
- *
- *        -|Regions|-           -|Pointers|-
- *
- *                                  <-- [puts scanned into checked]
- *         < scan               scan   check
- *          /    \                  \ /
- * v uncheck      check ^            X
- *          \    /                  / \
- *           free >          uncheck   free
- *                                  <-- [puts free into checked]
- *
- *          < scan
- *              |
- *     [uncheck]|[scan]
- * v uncheck----+---- check ^
- *        [free]|[check]
- *              |
- *            free >
- *
- *       < scan/check          < uncheck/scan/check
- *             |                          |
- *            .^.         ===>            ^.
- *           /	 \                          \
- *  v uncheck     free ^                     free ^
- */
-
 typedef struct {
 	Nit_dlist list;
-	int color;
+	int mark;
 	void *data;
 } Nit_gclist;
 
 typedef struct {
-        int white;
-	Nit_gclist *scan;    /* grey */
-	Nit_gclist *check;   /* black */
-	Nit_gclist *free;    /* white */
-	Nit_gclist *uncheck; /* ercu */
+        int mark;
+	Nit_gclist *scan;
+	Nit_gclist *check;
+	Nit_gclist *check_end;
+	Nit_gclist *free;
+	Nit_gclist *uncheck;
 
 	int (*dat_free)(void *data); /* Frees set data, not pointer. */
 
@@ -57,7 +31,7 @@ void *
 nit_gc_calloc(Nit_gc *gc, size_t size);
 
 void
-nit_gc_free(Nit_gc *gc, void *data);
+nit_gc_reclaim(Nit_gc *gc, void *data);
 
 void
 nit_gc_collect_1(Nit_gc *gc);
