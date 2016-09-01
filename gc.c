@@ -6,9 +6,46 @@
 #include "list.h"
 #include "gc.h"
 
+/* setup */
+
+Nit_gc *
+gc_new(void *iter,
+       void *(*next)(void *scan, void *iter))
+{
+	Nit_gc *gc = palloc(gc);
+
+	gc->mark = 0;
+	gc->scan = NULL;
+	gc->scan_end = NULL;
+	gc->check = NULL;
+	gc->uncheck = NULL;
+	gc->free = NULL;
+
+	gc->iter = iter;
+	gc->next = next;
+
+	return gc;
+}
+
+int
+gc_free(Nit_gc *gc)
+{
+	Nit_gclist *list = gc->free;
+	Nit_gclist *tmp;
+
+	if (gc->scan || gc->scan_end || gc->check || gc->uncheck)
+		return 1;
+
+	delayed_foreach (tmp, list)
+		free(tmp);
+
+	return 1;
+}
+
+/* alloc */
 
 static void *
-nit_gc_place(Nit_gc *gc, void *data)
+gc_add(Nit_gc *gc, void *data)
 {
 	Nit_gclist *list;
 
@@ -20,58 +57,78 @@ nit_gc_place(Nit_gc *gc, void *data)
 
 	pcheck_c((list = palloc(list)), NULL, free(data));
 
-	if (gc->check_end) {
-		dlist_put_after(list, gc->check_end);
+	if (gc->scan_end) {
+		dlist_put_after(list, gc->scan_end);
 	} else {
-		gc->check = gc->check_end = list;
+		gc->scan = gc->scan_end = list;
 		LIST_CONS(list, NULL);
 		DLIST_RCONS(list, NULL);
 	}
 
 end:
-	list->color = !gc->white;
+	list->mark = !gc->mark;
 	*((Nit_gclist **) data) = list;
 	list->data = ((Nit_gclist **) data) + 1;
 	return list->data;
 }
 
 void *
-nit_gc_malloc(Nit_gc *gc, size_t size)
+gc_malloc(Nit_gc *gc, size_t size)
 {
 	void *data = malloc(size + sizeof(Nit_gclist *));
 
 	pcheck(data, NULL);
 
-	return nit_gc_place(gc, data);
+	return gc_add(gc, data);
 }
 
 void *
-nit_gc_calloc(Nit_gc *gc, size_t size)
+gc_calloc(Nit_gc *gc, size_t size)
 {
         void *data = calloc(size + sizeof(Nit_gclist *), 1);
 
 	pcheck(data, NULL);
 
-	return nit_gc_place(gc, data);
+	return gc_add(gc, data);
 }
 
-void
-nit_gc_free(Nit_gc *gc, void *data)
+/* freeing */
+
+static void
+gc_place(Nit_gclist *list, Nit_gclist **place)
 {
-	Nit_gclist **place = ((Nit_gclist **) data) - 1;
-	Nit_gclist *list = *place;
-
-	free(place);
-
-	if (gc->free) {
-		dlist_move_b(list, gc->free);
+	if (*place) {
+		dlist_move_b(list, *place);
+		*place = list;
 		return;
 	}
 
-	gc->free = list;
+	dlist_remove(list);
+	*place = list;
 	DLIST_RCONS(list, NULL);
 	LIST_CONS(list, NULL);
 }
+
+void *
+gc_collect_1(Nit_gc *gc)
+{
+	if (gc->scan || !gc->uncheck)
+		return NULL;
+
+	return gc->uncheck->data;
+}
+
+void
+gc_reclaim(Nit_gc *gc, void *data)
+{
+	Nit_gclist **start = ((Nit_gclist **) data) - 1;
+	Nit_gclist *list = *start;
+
+	free(start);
+	gc_place(list, &gc->free);
+}
+
+/* scanning */
 
 static inline Nit_gclist *
 get_list(void *data)
@@ -79,30 +136,60 @@ get_list(void *data)
 	return *((Nit_gclist **) data) - 1;
 }
 
-void
-nit_gc_mark(Nit_gc *gc, void *data)
+static void
+scan(Nit_gc *gc, Nit_gclist *list)
 {
-	Nit_gclist *list = get_list(data);
+	if (list->mark == gc->mark)
+		return;
 
-	if (list->color == gc->white) {
-		list->color = !gc->white;
-	        place_check(gc, list);
-	}
+	list->mark = gc->mark;
+	gc_place(list, &gc->scan_end);
+
+	if (!gc->scan)
+		gc->scan = gc->scan_end;
 }
 
 void
-nit_gc_collect_1(Nit_gc *gc)
+gc_mark(Nit_gc *gc, void *data)
 {
-	if (gc->check == gc->scan) {
-		if (gc->uncheck == gc->scan) {
-			gc->white = !gc->white;
-			return;
-		}
-	}
+        scan(gc, get_list(data));
+}
 
-	void *data = gc->next(DLIST_PREV(gc->check), gc->iter);
+int
+gc_scan_1(Nit_gc *gc)
+{
+	Nit_gclist *list;
+	void *data;
 
-	if (!data) {
-		gc->check = DLIST_PREV(gc->check);
-	}
+	if (!gc->scan)
+		return 1;
+
+	if ((data = gc->next(gc->scan->data, gc->iter)))
+		scan(gc, get_list(data));
+
+	list = LIST_NEXT(gc->scan);
+	gc_place(gc->scan, &gc->check);
+	gc->scan = list;
+
+	if (list)
+		return 0;
+
+	gc->scan_end = NULL;
+	gc->mark = !gc->mark;
+
+	return 1;
+}
+
+int
+gc_restart(Nit_gc *gc, void *data)
+{
+	if (gc->uncheck)
+		return 1;
+
+	gc->uncheck = gc->check;
+	gc->check = NULL;
+	if (data)
+		gc_mark(gc, data);
+
+	return 0;
 }
