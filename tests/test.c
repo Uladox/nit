@@ -244,5 +244,6 @@ main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 	/* test_bimap(NULL, NULL); */
 	/* test_hmap(NULL, NULL); */
 	/* test_gap_buf(NULL, NULL); */
+	/* test_gc(NULL, NULL); */
 	return munit_suite_main(&test_suite, NULL, argc, argv);
 }

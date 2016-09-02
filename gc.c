@@ -39,7 +39,9 @@ gc_free(Nit_gc *gc)
 	delayed_foreach (tmp, list)
 		free(tmp);
 
-	return 1;
+	free(gc);
+
+	return 0;
 }
 
 /* alloc */
@@ -67,8 +69,9 @@ gc_add(Nit_gc *gc, void *data)
 
 end:
 	list->mark = !gc->mark;
-	*((Nit_gclist **) data) = list;
+	((Nit_gclist **) data)[0] = list;
 	list->data = ((Nit_gclist **) data) + 1;
+
 	return list->data;
 }
 
@@ -109,6 +112,24 @@ gc_place(Nit_gclist *list, Nit_gclist **place)
 	LIST_CONS(list, NULL);
 }
 
+static void
+uncheck_place(Nit_gc *gc, Nit_gclist *list, Nit_gclist **place)
+{
+	if (list == gc->uncheck)
+		gc->uncheck = LIST_NEXT(list);
+
+	gc_place(list, place);
+}
+
+static void
+unchech_place_scan(Nit_gc *gc, Nit_gclist *list)
+{
+	uncheck_place(gc, list, &gc->scan_end);
+
+	if (!gc->scan)
+		gc->scan = gc->scan_end;
+}
+
 void *
 gc_collect_1(Nit_gc *gc)
 {
@@ -125,7 +146,7 @@ gc_reclaim(Nit_gc *gc, void *data)
 	Nit_gclist *list = *start;
 
 	free(start);
-	gc_place(list, &gc->free);
+	uncheck_place(gc, list, &gc->free);
 }
 
 /* scanning */
@@ -133,7 +154,7 @@ gc_reclaim(Nit_gc *gc, void *data)
 static inline Nit_gclist *
 get_list(void *data)
 {
-	return *((Nit_gclist **) data) - 1;
+	return ((Nit_gclist **) data)[-1];
 }
 
 static void
@@ -143,10 +164,7 @@ scan(Nit_gc *gc, Nit_gclist *list)
 		return;
 
 	list->mark = gc->mark;
-	gc_place(list, &gc->scan_end);
-
-	if (!gc->scan)
-		gc->scan = gc->scan_end;
+	unchech_place_scan(gc, list);
 }
 
 void
@@ -175,7 +193,6 @@ gc_scan_1(Nit_gc *gc)
 		return 0;
 
 	gc->scan_end = NULL;
-	gc->mark = !gc->mark;
 
 	return 1;
 }
@@ -186,8 +203,10 @@ gc_restart(Nit_gc *gc, void *data)
 	if (gc->uncheck)
 		return 1;
 
+	gc->mark = !gc->mark;
 	gc->uncheck = gc->check;
 	gc->check = NULL;
+
 	if (data)
 		gc_mark(gc, data);
 
