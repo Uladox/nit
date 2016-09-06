@@ -110,6 +110,10 @@ nit_gap_erase(Nit_gap *gap, ptrdiff_t amount);
 void
 nit_gap_empty(Nit_gap *gap);
 
+/* Comparison */
+int
+nit_gap_compare(const Nit_gap *gap1, const Nit_gap *gap2);
+
 #if defined NIT_SHORT_NAMES || defined NIT_GAP_BUF_SHORT_NAMES
 # define gap_init(...)      nit_gap_init(__VA_ARGS__)
 # define gap_clone(...)     nit_gap_clone(__VA_ARGS__)
@@ -138,4 +142,5 @@ nit_gap_empty(Nit_gap *gap);
 # define gap_erase_b(...)   nit_gap_erase_b(__VA_ARGS__)
 # define gap_erase(...)     nit_gap_erase(__VA_ARGS__)
 # define gap_empty(...)     nit_gap_empty(__VA_ARGS__)
+# define gap_compare(...)   nit_gap_compare(__VA_ARGS__)
 #endif

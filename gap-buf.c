@@ -325,3 +325,45 @@ gap_empty(Nit_gap *gap)
 	gap->end = gap->size - 1;
 }
 
+int
+nit_gap_compare(const Nit_gap *gap1, const Nit_gap *gap2)
+{
+	int shorter;
+	const Nit_gap *gaps[2] = { gap1, gap2 };
+	const char *str1 = gap1->bytes;
+	const char *str2 = gap2->bytes;
+        size_t num1;
+	size_t num2;
+
+	if (gap_len(gap1) != gap_len(gap2))
+		return 0;
+
+	if (gap1->start < gap2->start) {
+		shorter = 0;
+		num1 = gap1->start;
+	} else {
+		shorter = 1;
+		num1 = gap2->start;
+	}
+
+	if (strncmp(str1, str2, num1))
+		return 0;
+
+	if (!(num2 = gaps[!shorter]->start - num1)) {
+		str1 = bytes_past_end(gap1);
+		str2 = bytes_past_end(gap2);
+		return !strncmp(str1, str2, size_past_end(gap1));
+	}
+
+	str1 = bytes_past_end(gaps[shorter]);
+	str2 = gaps[!shorter]->bytes + num1;
+
+	if (strncmp(str1, str2, num2))
+		return 0;
+
+	str1 += num2;
+	str2 = bytes_past_end(gaps[!shorter]);
+	num2 = size_past_end(gaps[!shorter]);
+
+	return !strncmp(str1, str2, num2);
+}
