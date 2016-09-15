@@ -19,55 +19,47 @@
  * #include "list.h"
  */
 
-typedef struct {
-	Nit_list next;
-	void *key;
-	uint32_t key_size;
-	void *storage;
-} Nit_hentry;
+/* typedef struct { */
+/* 	Nit_list next; */
+/* 	void *key; */
+/* 	uint32_t key_size; */
+/* 	void *storage; */
+/* } Nit_hentry; */
 
-typedef struct {
-	Nit_hentry *first;
-} Nit_hbin;
+/* typedef struct { */
+/* 	Nit_hentry *first; */
+/* } Nit_hbin; */
 
 typedef void(*Nit_map_free)(void *key, void *storage);
 
 typedef struct {
 	Nit_map_free free_contents;
-        int bin_num;
-	int entry_num;
-	const int *primes_pointer;
-	Nit_hbin *bins;
+	Nit_hset *set;
 } Nit_hmap;
 
-Nit_hentry *
-nit_hentry_new(void *key, uint32_t key_size, void *storage);
+/* Nit_hentry * */
+/* nit_hentry_new(void *key, uint32_t key_size, void *storage); */
 
 Nit_hmap *
-<<<<<<< HEAD
-nit_hmap_new(unsigned int sequence, Nit_map_cmp compare,
-	     Nit_map_free free_contents);
-=======
 nit_hmap_new(unsigned int sequence, Nit_map_free free_contents);
->>>>>>> origin/master
 
 void
 nit_hmap_free(Nit_hmap *hmap);
 
-Nit_hentry **
-nit_hmap_entry(Nit_hmap *map, void *key, uint32_t key_size);
+/* Nit_hentry ** */
+/* nit_hmap_entry(Nit_hmap *map, void *key, uint32_t key_size); */
 
 int
 nit_hmap_add_reduce(Nit_hmap *map);
 
-extern const char *nit_hmap_present;
-extern const char *nit_hmap_no_mem;
+/* extern const char *nit_hmap_present; */
+/* extern const char *nit_hmap_no_mem; */
 
 const char *
-nit_hmap_add(Nit_hmap *hmap, void *key,
-	     uint32_t key_size, void *storage);
+nit_hmap_add(Nit_hmap *hmap, void *key, uint32_t key_size,
+	     void *storage, uint32_t *storage_size);
 
-void
+void *
 nit_hmap_remove(Nit_hmap *map, void *key, uint32_t key_size);
 
 void *
