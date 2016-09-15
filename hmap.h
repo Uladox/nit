@@ -30,13 +30,9 @@ typedef struct {
 	Nit_hentry *first;
 } Nit_hbin;
 
-typedef int (*Nit_map_cmp)(const void *entry_key, uint32_t entry_key_size,
-			   const void *key, uint32_t key_size);
-
 typedef void(*Nit_map_free)(void *key, void *storage);
 
 typedef struct {
-	Nit_map_cmp compare;
 	Nit_map_free free_contents;
         int bin_num;
 	int entry_num;
@@ -48,8 +44,12 @@ Nit_hentry *
 nit_hentry_new(void *key, uint32_t key_size, void *storage);
 
 Nit_hmap *
+<<<<<<< HEAD
 nit_hmap_new(unsigned int sequence, Nit_map_cmp compare,
 	     Nit_map_free free_contents);
+=======
+nit_hmap_new(unsigned int sequence, Nit_map_free free_contents);
+>>>>>>> origin/master
 
 void
 nit_hmap_free(Nit_hmap *hmap);

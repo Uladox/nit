@@ -32,9 +32,9 @@ typedef struct {
 } Nit_entry_list;
 
 Nit_bimap *
-nit_bimap_new(unsigned int lsequence, Nit_map_cmp lcompare,
+nit_bimap_new(unsigned int lsequence,
 	      Nit_map_free lfree_contents,
-	      unsigned int rsequence, Nit_map_cmp rcompare,
+	      unsigned int rsequence,
 	      Nit_map_free rfree_contents);
 
 void
