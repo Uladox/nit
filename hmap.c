@@ -126,10 +126,8 @@ hmap_new(unsigned int sequence, Nit_map_cmp compare,
 	bin = map->bins;
 
 
-	for (; i != hmap_primes[sequence]; ++i) {
+	for (; i != hmap_primes[sequence]; ++i, ++bin)
 		bin->first = NULL;
-		++bin;
-	}
 
 	return map;
 }
