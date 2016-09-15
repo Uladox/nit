@@ -27,16 +27,16 @@
 #define BIN_MAX_DENSITY 10
 
 Nit_bimap *
-nit_bimap_new(unsigned int lsequence, Nit_map_cmp lcompare,
+nit_bimap_new(unsigned int lsequence,
 	      Nit_map_free lfree_contents,
-	      unsigned int rsequence, Nit_map_cmp rcompare,
+	      unsigned int rsequence,
 	      Nit_map_free rfree_contents)
 {
 	Nit_bimap *map = palloc(map);
 
 	pcheck(map, NULL);
-	map->left = hmap_new(lsequence, lcompare, lfree_contents);
-	map->right = hmap_new(rsequence, rcompare, rfree_contents);
+	map->left = hmap_new(lsequence, lfree_contents);
+	map->right = hmap_new(rsequence, rfree_contents);
 
 	return map;
 }

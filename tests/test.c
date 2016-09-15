@@ -13,13 +13,6 @@
 #include "../gap-buf.h"
 #include "../gc.h"
 
-static int
-hmap_compare(const void *entry_key, uint32_t entry_key_size,
-	     const void *key, uint32_t key_size)
-{
-	return (*(int *) entry_key) == (*(int *) key);
-}
-
 static void
 hmap_free_contents(void *key, void *storage)
 {
@@ -30,8 +23,7 @@ hmap_free_contents(void *key, void *storage)
 static MunitResult
 test_hmap(const MunitParameter params[], void* data)
 {
-	Nit_hmap *map = hmap_new(2, hmap_compare,
-					      hmap_free_contents);
+	Nit_hmap *map = hmap_new(2, hmap_free_contents);
 	int i = 0;
 
 	(void) params;
@@ -57,20 +49,6 @@ test_hmap(const MunitParameter params[], void* data)
 	return MUNIT_OK;
 }
 
-static int
-bimap_lcompare(const void *entry_key, uint32_t entry_key_size,
-	       const void *key, uint32_t key_size)
-{
-	return !strcmp(entry_key, key);
-}
-
-static int
-bimap_rcompare(const void *entry_key, uint32_t entry_key_size,
-	       const void *key, uint32_t key_size)
-{
-	return (*(int *) entry_key) == (*(int *) key);
-}
-
 static void
 bimap_free_contents(void *key, void *storage)
 {
@@ -89,8 +67,8 @@ static MunitResult
 test_bimap(const MunitParameter params[], void* data)
 {
 	Nit_bimap *map =
-		bimap_new(2, bimap_lcompare, bimap_free_contents,
-			  0, bimap_rcompare, bimap_free_contents);
+		bimap_new(2, bimap_free_contents,
+			  0, bimap_free_contents);
 	char str1[] = "cats";
 	int int1 = 5;
 	char str2[] = "dogs";

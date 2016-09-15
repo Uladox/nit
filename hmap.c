@@ -40,7 +40,7 @@ static const int hmap_primes[] = {
 void rehash(Nit_hmap *map);
 
 #define ROT32(x, y) ((x << y) | (x >> (32 - y)))
-uint32_t
+static uint32_t
 murmur3_32(const char *key, uint32_t len, uint32_t seed)
 {
 	static const uint32_t c1 = 0xcc9e2d51;
@@ -94,6 +94,15 @@ murmur3_32(const char *key, uint32_t len, uint32_t seed)
 	return h;
 }
 
+static int
+compare(const Nit_hentry *entry , const void *key, uint32_t key_size)
+{
+	if (key_size != entry->key_size)
+		return 0;
+
+	return !memcmp(entry->key, key, key_size);
+}
+
 Nit_hentry *
 hentry_new(void *key, uint32_t key_size, void *storage)
 {
@@ -109,15 +118,13 @@ hentry_new(void *key, uint32_t key_size, void *storage)
 }
 
 Nit_hmap *
-hmap_new(unsigned int sequence, Nit_map_cmp compare,
-	 Nit_map_free free_contents)
+hmap_new(unsigned int sequence, Nit_map_free free_contents)
 {
 	int i = 0;
 	Nit_hbin *bin;
 	Nit_hmap *map = palloc(map);
 
 	pcheck(map, NULL);
-	map->compare = compare;
 	map->free_contents = free_contents;
 	map->bin_num = hmap_primes[sequence];
 	map->bins = malloc(sizeof(*map->bins) * hmap_primes[sequence]);
@@ -164,14 +171,13 @@ hmap_entry(Nit_hmap *map, void *key, uint32_t key_size)
 	row = murmur3_32(key, key_size, H_SEED) % map->bin_num;
 	entry = map->bins[row].first;
 
-	if (!entry || map->compare(entry->key, entry->key_size, key, key_size))
+	if (!entry || compare(entry, key, key_size))
 		return &map->bins[row].first;
 
         foreach (entry) {
 		Nit_hentry *next = LIST_NEXT(entry);
 
-		if (!next || map->compare(next->key, next->key_size,
-					 key, key_size))
+		if (!next || compare(next, key, key_size))
 			break;
 	}
 
@@ -218,7 +224,7 @@ hmap_remove(Nit_hmap *map, void *key, uint32_t key_size)
 	if (!entry)
 		return;
 
-	if (map->compare(entry->key, entry->key_size, key, key_size)) {
+	if (compare(entry, key, key_size)) {
 		map->bins[row].first = LIST_NEXT(entry);
 		map->free_contents(entry->key, entry->storage);
 		free(entry);
@@ -230,7 +236,7 @@ hmap_remove(Nit_hmap *map, void *key, uint32_t key_size)
 	entry = LIST_NEXT(entry);
 
 	foreach (entry) {
-		if (map->compare(entry->key, entry->key_size, key, key_size)) {
+		if (compare(entry, key, key_size)) {
 		        LIST_CONS(prev, LIST_NEXT(entry));
 			map->free_contents(entry->key, entry->storage);
 			free(entry);
@@ -248,7 +254,7 @@ hmap_get(const Nit_hmap *map, const void *key, uint32_t key_size)
 	const Nit_hentry *entry = map->bins[row].first;
 
         foreach (entry)
-		if (map->compare(entry->key, entry->key_size, key, key_size))
+		if (compare(entry, key, key_size))
 			return entry->storage;
 
 	return NULL;
