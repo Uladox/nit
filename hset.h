@@ -30,13 +30,14 @@ typedef struct {
 } Nit_hbin;
 
 typedef void(*Nit_set_free)(void *dat);
+typedef struct nit_hset Nit_hset;
 
-typedef struct {
+struct nit_hset {
         int bin_num;
 	int entry_num;
 	const int *primes_pointer;
 	Nit_hbin *bins;
-} Nit_hset;
+};
 
 Nit_hentry *
 nit_hentry_new(void *dat, uint32_t key_size);
@@ -57,8 +58,7 @@ extern const char *nit_hset_present;
 extern const char *nit_hset_no_mem;
 
 const char *
-nit_hset_add(Nit_hset *hset, void *dat,
-	     uint32_t key_size);
+nit_hset_add(Nit_hset *hset, void *dat, uint32_t key_size);
 
 void *
 nit_hset_remove(Nit_hset *set, const void *dat, uint32_t key_size);

@@ -7,7 +7,7 @@ OBJ = $(SRC:.c=.o)
 
 LIB = libnit.a
 INC = list.h hmap-out.h hmap.h socket.h bimap.h io.h palloc.h macros.h \
-      gap-buf.h gc.h
+      gap-buf.h gc.h hset.h
 
 all: $(LIB)
 

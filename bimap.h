@@ -32,13 +32,11 @@ typedef struct {
 } Nit_entry_list;
 
 Nit_bimap *
-nit_bimap_new(unsigned int lsequence,
-	      Nit_map_free lfree_contents,
-	      unsigned int rsequence,
-	      Nit_map_free rfree_contents);
+nit_bimap_new(unsigned int lsequence, unsigned int rsequence);
 
 void
-nit_bimap_free(Nit_bimap *map);
+nit_bimap_free(Nit_bimap *map, Nit_map_free lfree_contents,
+	       Nit_map_free rfree_contents);
 
 const char *
 nit_bimap_add(Nit_bimap *map,

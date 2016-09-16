@@ -21,22 +21,14 @@
 #define NIT_SHORT_NAMES
 #include "macros.h"
 #include "list.h"
+#include "hset.h"
 #include "hmap.h"
 #include "hmap-out.h"
 
 
-static const char *free_contents = QUOTE(
-	static void free_contents(void *key, void *storage)
-	{
-		fprintf(stderr, "Error: Tried to free generated map!\n");
-		exit(1);
-	});
-
-
 static inline void
 entry_gen(Nit_hentry *entry, FILE *file,
-	  void (*key_print)(FILE *file, void *key, uint32_t key_size),
-	  void (*storage_print)(FILE *file, void *storage))
+	  void (*dat_print)(FILE *file, void *dat, uint32_t key_size))
 {
 	int entry_num = 0;
 
@@ -45,10 +37,8 @@ entry_gen(Nit_hentry *entry, FILE *file,
 		fputs("&(Nit_hentry) {", file);
 		fprintf(file, "\n\t\t.key_size = %"PRIu32, entry->key_size);
 
-		fputs(",\n\t\t.key = ", file);
-		key_print(file, entry->key, entry->key_size);
-		fputs(",\n\t\t.storage = ", file);
-		storage_print(file, entry->storage);
+		fputs(",\n\t\t.dat = ", file);
+		dat_print(file, entry->dat, entry->key_size);
 
 		fputs(",\n\t\t.next.next = ", file);
 	}
@@ -60,8 +50,7 @@ entry_gen(Nit_hentry *entry, FILE *file,
 
 static inline void
 bins_gen(Nit_hbin *bin, FILE *file, int bin_num,
-	 void (*key_print)(FILE *file, void *key, uint32_t key_size),
-	 void (*storage_print)(FILE *file, void *storage))
+	 void (*dat_print)(FILE *file, void *dat, uint32_t key_size))
 {
 	int i = 0;
 
@@ -69,7 +58,7 @@ bins_gen(Nit_hbin *bin, FILE *file, int bin_num,
 
 	for (; i != bin_num; ++i, ++bin) {
 		fprintf(file, "\n\t[%i].first = ", i);
-		entry_gen(bin->first, file, key_print, storage_print);
+		entry_gen(bin->first, file, dat_print);
 	}
 
 	fputs("\n}\n", file);
@@ -86,22 +75,16 @@ nit_hmap_out(Nit_hmap *map, const char *name,
 	      "\n", file);
 	fputs(out->headers, file);
 	fputc('\n', file);
-
-	fputs(free_contents, file);
-	fputc('\n', file);
 	fputs(out->compare, file);
 	fputc('\n', file);
 
 	fprintf(file, "\nconst Nit_hmap %s = {", name);
 
-	fputs("\n.free_contents = free_contents", file);
-	fputs(",\n.compare = compare", file);
 	fprintf(file, ",\n.bin_num = %u", map->bin_num);
 	fprintf(file, ",\n.entry_num = %i", map->entry_num);
 	fprintf(file, ",\n.primes_pointer = &(int) { %i }",
 		*map->primes_pointer);
-	bins_gen(map->bins, file, map->bin_num,
-		 out->key_print, out->storage_print);
+	bins_gen(map->bins, file, map->bin_num, out->dat_print);
 
 	fputs("\n};", file);
 

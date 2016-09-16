@@ -8,6 +8,7 @@
 #define NIT_SHORT_NAMES
 #include "../macros.h"
 #include "../list.h"
+#include "../hset.h"
 #include "../hmap.h"
 #include "../bimap.h"
 #include "../gap-buf.h"
@@ -16,25 +17,23 @@
 static void
 hmap_free_contents(void *key, void *storage)
 {
-	free(key);
 	free(storage);
 }
 
 static MunitResult
 test_hmap(const MunitParameter params[], void* data)
 {
-	Nit_hmap *map = hmap_new(2, hmap_free_contents);
+	Nit_hmap *map = hmap_new(2);
 	int i = 0;
 
 	(void) params;
 	(void) data;
 
 	for (; i <= 500; ++i) {
-		int *key = malloc(sizeof(i));
 		int *storage = malloc(sizeof(i));
 
-		*storage = (*key = i);
-	        hmap_add(map, key, sizeof(*key), storage);
+		*storage = i;
+	        hmap_add(map, &i, sizeof(i), storage);
 	}
 
 	for (i = 0; i <= 500; ++i)
@@ -42,10 +41,10 @@ test_hmap(const MunitParameter params[], void* data)
 				 *(int *) hmap_get(map, &i, sizeof(i)));
 
 	i = 42;
-        hmap_remove(map, &i, sizeof(i));
+        free(hmap_remove(map, &i, sizeof(i)));
 	munit_assert_null(hmap_get(map, &i, sizeof(i)));
 
-        hmap_free(map);
+        hmap_free(map, hmap_free_contents);
 	return MUNIT_OK;
 }
 
@@ -66,9 +65,7 @@ bimap_free_contents(void *key, void *storage)
 static MunitResult
 test_bimap(const MunitParameter params[], void* data)
 {
-	Nit_bimap *map =
-		bimap_new(2, bimap_free_contents,
-			  0, bimap_free_contents);
+	Nit_bimap *map = bimap_new(2, 0);
 	char str1[] = "cats";
 	int int1 = 5;
 	char str2[] = "dogs";
@@ -86,19 +83,19 @@ test_bimap(const MunitParameter params[], void* data)
 	bimap_add(map, str2, sizeof(str2), &int3, sizeof(int3));
 
 	entry = bimap_lget(map, str1, sizeof(str1));
-	munit_assert_int(int1, ==, *(int *) entry->entry->key);
+	munit_assert_int(int1, ==, *(int *) entry->entry->dat);
 
 	entry = bimap_rget(map, &int2, sizeof(int2));
-	munit_assert_string_equal(entry->entry->key, str2);
+	munit_assert_string_equal(entry->entry->dat, str2);
 
 	entry = bimap_lget(map, str2, sizeof(str2));
-	munit_assert_int(int3, ==, *(int *) entry->entry->key);
+	munit_assert_int(int3, ==, *(int *) entry->entry->dat);
 	entry = NIT_LIST_NEXT(entry);
-	munit_assert_int(int2, ==, *(int *) entry->entry->key);
+	munit_assert_int(int2, ==, *(int *) entry->entry->dat);
 
 	munit_assert_null(bimap_lget(map, str3, sizeof(str3)));
 
-        bimap_free(map);
+        bimap_free(map, bimap_free_contents, bimap_free_contents);
 	return MUNIT_OK;
 }
 

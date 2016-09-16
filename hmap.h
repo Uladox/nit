@@ -17,65 +17,77 @@
 /* Include these
  * #include <stdint.h>
  * #include "list.h"
+ * #include "hset.h"
  */
 
-/* typedef struct { */
-/* 	Nit_list next; */
-/* 	void *key; */
-/* 	uint32_t key_size; */
-/* 	void *storage; */
-/* } Nit_hentry; */
+struct nit_hset;
 
-/* typedef struct { */
-/* 	Nit_hentry *first; */
-/* } Nit_hbin; */
-
+typedef Nit_hset Nit_hmap;
 typedef void(*Nit_map_free)(void *key, void *storage);
 
-typedef struct {
-	Nit_map_free free_contents;
-	Nit_hset *set;
-} Nit_hmap;
+static inline void **
+nit_hmap_storage_ref(void *dat, uint32_t key_size)
+{
+	return (void **) (((char *) dat) + key_size);
+}
 
-/* Nit_hentry * */
-/* nit_hentry_new(void *key, uint32_t key_size, void *storage); */
+static inline void *
+nit_hmap_storage(void *dat, uint32_t key_size)
+{
+	return *nit_hmap_storage_ref(dat, key_size);
+}
 
-Nit_hmap *
-nit_hmap_new(unsigned int sequence, Nit_map_free free_contents);
+static inline Nit_hmap *
+nit_hmap_new(unsigned int sequence)
+{
+	return nit_hset_new(sequence);
+}
 
 void
-nit_hmap_free(Nit_hmap *hmap);
+nit_hmap_free(Nit_hmap *hmap, Nit_map_free dat_free);
 
-/* Nit_hentry ** */
-/* nit_hmap_entry(Nit_hmap *map, void *key, uint32_t key_size); */
+void *
+nit_hmap_dat_new(void *key, uint32_t key_size, void *storage);
 
-int
-nit_hmap_add_reduce(Nit_hmap *map);
-
-/* extern const char *nit_hmap_present; */
-/* extern const char *nit_hmap_no_mem; */
+static inline int
+nit_hmap_add_reduce(Nit_hmap *map)
+{
+	return nit_hset_add_reduce(map);
+}
 
 const char *
-nit_hmap_add(Nit_hmap *hmap, void *key, uint32_t key_size,
-	     void *storage, uint32_t *storage_size);
+nit_hmap_add(Nit_hmap *hmap, void *key, uint32_t key_size, void *storage);
 
 void *
 nit_hmap_remove(Nit_hmap *map, void *key, uint32_t key_size);
 
-void *
-nit_hmap_get(const Nit_hmap *map, const void *key, uint32_t key_size);
+static inline void *
+nit_hmap_get(const Nit_hmap *map, const void *key, uint32_t key_size)
+{
+	void *dat = nit_hset_get(map, key, key_size);
 
-int
-nit_hmap_rehash(Nit_hmap *map);
+	if (!dat)
+		return NULL;
+
+	return nit_hmap_storage(dat, key_size);
+}
+
+static inline int
+nit_hmap_rehash(Nit_hmap *map)
+{
+	return nit_hset_rehash(map);
+}
 
 #if defined NIT_SHORT_NAMES || defined NIT_HMAP_SHORT_NAMES
-# define hentry_new(...)      nit_hentry_new(__VA_ARGS__)
-# define hmap_new(...)        nit_hmap_new(__VA_ARGS__)
-# define hmap_free(...)       nit_hmap_free(__VA_ARGS__)
-# define hmap_entry(...)      nit_hmap_entry(__VA_ARGS__)
-# define hmap_add_reduce(...) nit_hmap_add_reduce(__VA_ARGS__)
-# define hmap_add(...)        nit_hmap_add(__VA_ARGS__)
-# define hmap_remove(...)     nit_hmap_remove(__VA_ARGS__)
-# define hmap_get(...)        nit_hmap_get(__VA_ARGS__)
-# define hmap_rehash(...)     nit_hmap_rehash(__VA_ARGS__)
+# define hmap_storage_ref(...) nit_hmap_storage_ref(__VA_ARGS__)
+# define hmap_storage(...)     nit_hmap_storage(__VA_ARGS__)
+# define hmap_new(...)         nit_hmap_new(__VA_ARGS__)
+# define hmap_free(...)        nit_hmap_free(__VA_ARGS__)
+# define hmap_dat_new(...)     nit_hmap_dat_new(__VA_ARGS__)
+# define hmap_entry(...)       nit_hmap_entry(__VA_ARGS__)
+# define hmap_add_reduce(...)  nit_hmap_add_reduce(__VA_ARGS__)
+# define hmap_add(...)         nit_hmap_add(__VA_ARGS__)
+# define hmap_remove(...)      nit_hmap_remove(__VA_ARGS__)
+# define hmap_get(...)         nit_hmap_get(__VA_ARGS__)
+# define hmap_rehash(...)      nit_hmap_rehash(__VA_ARGS__)
 #endif

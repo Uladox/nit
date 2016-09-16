@@ -17,14 +17,14 @@
 /* Include these
  * #include <stdint.h>
  * #include <stdio.h>
+ * #include "hset.h"
  * #include "hmap.h"
  */
 
 typedef struct {
 	const char *headers;
 	const char *compare;
-	void (*key_print)(FILE *file, void *key, uint32_t key_size);
-	void (*storage_print)(FILE *file, void *storage);
+	void (*dat_print)(FILE *file, void *dat, uint32_t key_size);
 } Nit_hmap_out;
 
 void
