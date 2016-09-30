@@ -62,13 +62,13 @@ hmap_dat_new(void *key, uint32_t key_size, void *storage)
 	return dat;
 }
 
-const char *
+enum nit_hset_error
 nit_hmap_add(Nit_hmap *map, void *key, uint32_t key_size, void *storage)
 {
 	void *dat = hmap_dat_new(key, key_size, storage);
 
 	if (!dat)
-		return nit_hset_no_mem;
+		return NIT_HSET_NO_MEM;
 
 	return nit_hset_add(map, dat, key_size);
 }

@@ -20,8 +20,6 @@
  * #include "hset.h"
  */
 
-struct nit_hset;
-
 typedef Nit_hset Nit_hmap;
 typedef void(*Nit_map_free)(void *key, void *storage);
 
@@ -55,7 +53,7 @@ nit_hmap_add_reduce(Nit_hmap *map)
 	return nit_hset_add_reduce(map);
 }
 
-const char *
+enum nit_hset_error
 nit_hmap_add(Nit_hmap *hmap, void *key, uint32_t key_size, void *storage);
 
 void *

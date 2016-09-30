@@ -19,6 +19,12 @@
  * #include "list.h"
  */
 
+enum nit_hset_error {
+	NIT_HSET_OK = 0,
+	NIT_HSET_OCCUPIED,
+	NIT_HSET_NO_MEM
+};
+
 typedef struct {
 	Nit_list next;
 	void *dat;
@@ -46,7 +52,7 @@ Nit_hset *
 nit_hset_new(unsigned int sequence);
 
 void
-nit_hset_free(Nit_hset *hset, Nit_set_free dat_free);
+nit_hset_free(Nit_hset *set, Nit_set_free dat_free);
 
 Nit_hentry **
 nit_hset_entry(Nit_hset *set, void *dat, uint32_t key_size);
@@ -54,11 +60,11 @@ nit_hset_entry(Nit_hset *set, void *dat, uint32_t key_size);
 int
 nit_hset_add_reduce(Nit_hset *set);
 
-extern const char *nit_hset_present;
-extern const char *nit_hset_no_mem;
+enum nit_hset_error
+nit_hset_add(Nit_hset *set, void *dat, uint32_t key_size);
 
-const char *
-nit_hset_add(Nit_hset *hset, void *dat, uint32_t key_size);
+enum nit_hset_error
+nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size);
 
 void *
 nit_hset_remove(Nit_hset *set, const void *dat, uint32_t key_size);
@@ -82,6 +88,7 @@ nit_hset_rehash(Nit_hset *set);
 # define hset_entry(...)      nit_hset_entry(__VA_ARGS__)
 # define hset_add_reduce(...) nit_hset_add_reduce(__VA_ARGS__)
 # define hset_add(...)        nit_hset_add(__VA_ARGS__)
+# define hset_copy_add(...)   nit_hset_copy_add(__VA_ARGS__)
 # define hset_remove(...)     nit_hset_remove(__VA_ARGS__)
 # define hset_get(...)        nit_hset_get(__VA_ARGS__)
 # define hset_contains(...)   nit_hset_contains(__VA_ARGS__)

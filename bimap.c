@@ -48,7 +48,7 @@ nit_bimap_free(Nit_bimap *map, Nit_map_free lfree_contents,
         free(map);
 }
 
-const char *
+enum nit_hset_error
 nit_bimap_add(Nit_bimap *map,
 	      void *lkey, uint32_t lsize, void *rkey, uint32_t rsize)
 {
@@ -57,8 +57,8 @@ nit_bimap_add(Nit_bimap *map,
 	Nit_entry_list *lstorage = palloc(lstorage);
 	Nit_entry_list *rstorage = palloc(rstorage);
 
-	pcheck_c(lstorage, nit_hset_no_mem, free(rstorage));
-	pcheck_c(rstorage, nit_hset_no_mem, free(lstorage));
+	pcheck_c(lstorage, NIT_HSET_NO_MEM, free(rstorage));
+	pcheck_c(rstorage, NIT_HSET_NO_MEM, free(lstorage));
 
 	if (!*lentry) {
 		void *dat = hmap_dat_new(lkey, lsize, NULL);
@@ -82,11 +82,11 @@ nit_bimap_add(Nit_bimap *map,
 
 	if (!LIST_NEXT(*lentry))
 		if (unlikely(hset_add_reduce(map->left)))
-			return nit_hset_no_mem;
+			return NIT_HSET_NO_MEM;
 
 	if (!LIST_NEXT(*rentry))
 		if (unlikely(hset_add_reduce(map->right)))
-			return nit_hset_no_mem;
+			return NIT_HSET_NO_MEM;
 
-	return NULL;
+	return NIT_HSET_OK;
 }

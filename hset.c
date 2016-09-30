@@ -189,24 +189,34 @@ hset_add_reduce(Nit_hset *set)
 	return 0;
 }
 
-const char *nit_hset_present = "nit hset already contains element";
-const char *nit_hset_no_mem  = "nit hset could not allocate memory";
-
-const char *
+enum nit_hset_error
 hset_add(Nit_hset *set, void *dat, uint32_t key_size)
 {
 	Nit_hentry **entry = hset_entry(set, dat, key_size);
 
 	if (*entry)
-		return nit_hset_present;
+		return NIT_HSET_OCCUPIED;
 
 	pcheck((*entry = hentry_new(dat, key_size)),
-	       nit_hset_no_mem);
+	       NIT_HSET_NO_MEM);
 
 	if (unlikely(hset_add_reduce(set)))
-		return nit_hset_no_mem;
+		return NIT_HSET_NO_MEM;
 
-	return NULL;
+	return NIT_HSET_OK;
+}
+
+enum nit_hset_error
+nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size)
+{
+	void *new_dat = malloc(key_size);
+
+	if (!dat)
+		return NIT_HSET_NO_MEM;
+
+	memcpy(new_dat, dat, key_size);
+
+	return hset_add(set, dat, key_size);
 }
 
 void *

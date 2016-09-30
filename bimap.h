@@ -17,6 +17,7 @@
 /* Include these
  * #include <stdint.h>
  * #include "list.h"
+ * #include "hset.h"
  * #include "hmap.h"
  */
 
@@ -38,7 +39,7 @@ void
 nit_bimap_free(Nit_bimap *map, Nit_map_free lfree_contents,
 	       Nit_map_free rfree_contents);
 
-const char *
+enum nit_hset_error
 nit_bimap_add(Nit_bimap *map,
 	      void *lkey, uint32_t lsize, void *rkey, uint32_t rsize);
 
