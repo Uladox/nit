@@ -48,6 +48,20 @@ nit_bimap_free(Nit_bimap *map, Nit_map_free lfree_contents,
         free(map);
 }
 
+void
+nit_bimap_storage_free(void *storage)
+{
+	Nit_entry_list *list = storage;
+	Nit_entry_list *prev = NULL;
+
+	nit_foreach (list) {
+		free(prev);
+		prev = list;
+	}
+
+	free(prev);
+}
+
 enum nit_hset_error
 nit_bimap_add(Nit_bimap *map,
 	      void *lkey, uint32_t lsize, void *rkey, uint32_t rsize)

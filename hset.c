@@ -216,7 +216,7 @@ nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size)
 
 	memcpy(new_dat, dat, key_size);
 
-	return hset_add(set, dat, key_size);
+	return hset_add(set, new_dat, key_size);
 }
 
 void *
