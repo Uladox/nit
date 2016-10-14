@@ -26,195 +26,243 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#define NIT_SHORT_NAMES
 #include "macros.h"
 #include "palloc.h"
 #include "socket.h"
 
-Nit_connecter *
-nit_connecter_new(const char *path)
+Nit_joiner *
+joiner_new(const char *path)
 {
 	int len;
-	Nit_connecter *cntr = palloc(cntr);
+	Nit_joiner *jnr = palloc(jnr);
 
-	pcheck(cntr, NULL);
-	cntr->sd = socket(AF_UNIX, SOCK_STREAM, 0);
+	pcheck(jnr, NULL);
 
-	if (cntr->sd == -1) {
-		perror("socket");
-		free(cntr);
-		exit(1);
+	if (access(path, F_OK) >= 0 && unlink(path) < 0) {
+		perror("unlink");
+
+		return NULL;
 	}
 
-	cntr->socket.sun_family = AF_UNIX;
-	strcpy(cntr->socket.sun_path, path);
-	unlink(path);
-	len = strlen(path) + sizeof(cntr->socket.sun_family);
+	jnr->sd = socket(AF_UNIX, SOCK_STREAM, 0);
 
-	if (bind(cntr->sd, (struct sockaddr *)&cntr->socket, len) == -1) {
+	if (jnr->sd < 0) {
+		perror("socket");
+		free(jnr);
+
+	        return NULL;
+	}
+
+	jnr->socket.sun_family = AF_UNIX;
+	strcpy(jnr->socket.sun_path, path);
+	len = strlen(path) + sizeof(jnr->socket.sun_family);
+
+	if (bind(jnr->sd, (struct sockaddr *) &jnr->socket, len) < 0) {
 		perror("bind");
-		free(cntr);
-		exit(1);
+		free(jnr);
+
+	        return NULL;
 	}
 
-	return cntr;
+	return jnr;
 }
 
 void
-nit_connecter_free(Nit_connecter *cntr)
+joiner_free(Nit_joiner *jnr)
 {
-	close(cntr->sd);
-	free(cntr);
+	close(jnr->sd);
+	free(jnr);
 }
 
-Nit_connection *
-nit_connection_connect(const char *path)
+Nit_joint *
+joint_connect(const char *path)
 {
-	Nit_connection *cntn = palloc(cntn);
+	Nit_joint *jnt = palloc(jnt);
 
-	pcheck(cntn, NULL);
-	cntn->sd = socket(AF_UNIX, SOCK_STREAM, 0);
+	pcheck(jnt, NULL);
+	jnt->sd = socket(AF_UNIX, SOCK_STREAM, 0);
 
-	if (cntn->sd == -1) {
+	if (jnt->sd < 0) {
 		perror("socket");
-		free(cntn);
+		free(jnt);
+
 		return NULL;
 	}
 
-	cntn->socket.sun_family = AF_UNIX;
-	strcpy(cntn->socket.sun_path, path);
+	jnt->socket.sun_family = AF_UNIX;
+	strcpy(jnt->socket.sun_path, path);
+	jnt->len = strlen(path) + sizeof(jnt->socket.sun_family);
 
-	cntn->len = strlen(path) + sizeof(cntn->socket.sun_family);
+	pthread_mutex_init(&jnt->end_mutex, NULL);
 
-	pthread_mutex_init(&cntn->end_mutex, NULL);
-
-	if (connect(cntn->sd, (struct sockaddr *)&cntn->socket,
-		    cntn->len) == -1) {
+	if (connect(jnt->sd, (struct sockaddr *) &jnt->socket,
+		    jnt->len) < 0) {
 		perror("connect");
-		free(cntn);
+		free(jnt);
+
 		return NULL;
 	}
 
-	cntn->end_bool = 0;
+	jnt->end_bool = 0;
 
-	return cntn;
+	return jnt;
 }
 
-Nit_connection *
-nit_connecter_accept(Nit_connecter *cntr)
+Nit_joint *
+joiner_accept(Nit_joiner *jnr)
 {
-	Nit_connection *cntn = palloc(cntn);
+	Nit_joint *jnt = palloc(jnt);
 
-	pcheck(cntn, NULL);
+	pcheck(jnt, NULL);
 
-	if (listen(cntr->sd, 5) == -1) {
+	if (listen(jnr->sd, 5) < 0) {
 		perror("listen");
+		free(jnt);
+
 		return NULL;
 	}
 
-	cntn->len = sizeof(struct sockaddr);
-	cntn->sd = accept(cntr->sd,
-			  (struct sockaddr *) &cntn->socket,
-			  &cntn->len);
-	if (cntn->sd == -1) {
+	jnt->len = sizeof(struct sockaddr);
+	jnt->sd = accept(jnr->sd,
+			(struct sockaddr *) &jnt->socket,
+			&jnt->len);
+
+	if (jnt->sd < 0) {
 		perror("accept");
-		free(cntn);
+		free(jnt);
+
 		return NULL;
 	}
 
-	pthread_mutex_init(&cntn->end_mutex, NULL);
-	cntn->end_bool = 0;
+	pthread_mutex_init(&jnt->end_mutex, NULL);
+	jnt->end_bool = 0;
 
-	return cntn;
+	return jnt;
 }
 
 void
-nit_connection_free(Nit_connection *cntn)
+joint_free(Nit_joint *jnt)
 {
-	pthread_mutex_destroy(&cntn->end_mutex);
-	close(cntn->sd);
-	free(cntn);
+	pthread_mutex_destroy(&jnt->end_mutex);
+	close(jnt->sd);
+	free(jnt);
 }
 
 int
-nit_connection_end_check(Nit_connection *cntn)
+joint_end_check(Nit_joint *jnt)
 {
 	int value;
 
-	pthread_mutex_lock(&cntn->end_mutex);
-	value = cntn->end_bool;
-	pthread_mutex_unlock(&cntn->end_mutex);
+	pthread_mutex_lock(&jnt->end_mutex);
+	value = jnt->end_bool;
+	pthread_mutex_unlock(&jnt->end_mutex);
+
 	return value;
 }
 
 void
-nit_connection_end_mutate(Nit_connection *cntn, int value)
+joint_end_mutate(Nit_joint *jnt, int value)
 {
-	pthread_mutex_lock(&cntn->end_mutex);
-	cntn->end_bool = value;
-	pthread_mutex_unlock(&cntn->end_mutex);
+	pthread_mutex_lock(&jnt->end_mutex);
+	jnt->end_bool = value;
+	pthread_mutex_unlock(&jnt->end_mutex);
 }
 
 void
-nit_connection_kill(Nit_connection *cntn)
+joint_kill(Nit_joint *jnt)
 {
 	int true_val = 1;
 
-	pthread_mutex_lock(&cntn->end_mutex);
-	nit_connection_end_mutate(cntn, 1);
-	setsockopt(cntn->sd, SOL_SOCKET, SO_REUSEADDR,
+	pthread_mutex_lock(&jnt->end_mutex);
+        joint_end_mutate(jnt, 1);
+	setsockopt(jnt->sd, SOL_SOCKET, SO_REUSEADDR,
 		   &true_val, sizeof(int));
-	pthread_mutex_unlock(&cntn->end_mutex);
+	pthread_mutex_unlock(&jnt->end_mutex);
 }
 
-int
-nit_connection_read(Nit_connection *cntn,
-		    char **str, uint32_t *old_size,
-		    int *msg_size, uint32_t offset)
+static void
+set_zero_timeout(Nit_joint *jnt)
+{
+	FD_ZERO(&jnt->set);
+	FD_SET(jnt->sd, &jnt->set);
+	jnt->timeout.tv_sec = 0;
+	jnt->timeout.tv_usec = 0;
+}
+
+static int
+data_to_read(Nit_joint *jnt)
+{
+	set_zero_timeout(jnt);
+
+	return select(FD_SETSIZE, &jnt->set, NULL, NULL, &jnt->timeout);
+}
+
+static int
+resize_buf(char **buf, int32_t *old_size, int32_t size)
+{
+	if (size > *old_size) {
+		free(*buf);
+		*old_size = size;
+
+		if (!(*buf = malloc(size))) {
+			perror("malloc");
+
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+enum nit_join_status
+joint_read(Nit_joint *jnt, char **buf, int32_t *old_size,
+	   int32_t *msg_size, int32_t offset)
 {
 	int retval;
-	uint32_t size = 0;
-	uint32_t offset_size = offset;
+	int32_t size = 0;
+	char test;
 
-	pthread_mutex_lock(&cntn->end_mutex);
+	pthread_mutex_lock(&jnt->end_mutex);
 
-	FD_ZERO(&cntn->set);
-	FD_SET(cntn->sd,
-	       &cntn->set);
-	cntn->timeout.tv_sec = 0;
-	cntn->timeout.tv_usec = 0;
+	retval = data_to_read(jnt);
 
-	retval = select(FD_SETSIZE, &cntn->set, NULL, NULL,
-			&cntn->timeout);
-	if (retval == 1) {
-		recv(cntn->sd, &size, sizeof(uint32_t), 0);
-		offset_size += size;
-
-		if (offset_size > *old_size) {
-			free(*str);
-			*str = malloc(offset_size);
-			*old_size = offset_size;
+	if (retval > 0) {
+		if (!recv(jnt->sd, &test, 1, MSG_PEEK | MSG_DONTWAIT)) {
+			retval = NIT_JOIN_CLOSED;
+			goto end;
 		}
 
-		*msg_size = recv(cntn->sd, *str, size, 0);
+		recv(jnt->sd, &size, sizeof(size), 0);
+
+		if (!resize_buf(buf, old_size, offset + size)) {
+			retval = NIT_JOIN_ERROR;
+			goto end;
+		}
+
+		*msg_size = recv(jnt->sd, *buf, size, 0);
 
 		if (*msg_size <= 0) {
 			if (*msg_size < 0)
 				perror("recv");
-			cntn->end_bool = 1;
+
+			jnt->end_bool = 1;
 		}
 	}
+end:
+	pthread_mutex_unlock(&jnt->end_mutex);
 
-	pthread_mutex_unlock(&cntn->end_mutex);
 	return retval;
 }
 
 void
-nit_connection_send(Nit_connection *cntn,
-		    const void *msg, uint32_t msg_size)
+joint_send(Nit_joint *jnt, const void *msg, int32_t msg_size)
 {
-	if (!nit_connection_end_check(cntn))
-		if (send(cntn->sd, msg, msg_size, MSG_NOSIGNAL) < 0) {
+	if (!joint_end_check(jnt))
+		if (send(jnt->sd, &msg_size,
+			 sizeof(msg_size), MSG_NOSIGNAL) < 0 ||
+		    send(jnt->sd, msg, msg_size, MSG_NOSIGNAL) < 0) {
 			perror("send");
-			nit_connection_end_mutate(cntn, 1);
+			joint_end_mutate(jnt, 1);
 		}
 }

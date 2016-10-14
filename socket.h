@@ -25,7 +25,7 @@
 typedef struct {
 	struct sockaddr_un socket;
 	int sd;
-} Nit_connecter;
+} Nit_joiner;
 
 typedef struct {
 	struct sockaddr_un socket;
@@ -37,50 +37,55 @@ typedef struct {
 	pthread_mutex_t end_mutex;
 	int end_bool;
 	unsigned int len;
-} Nit_connection;
+} Nit_joint;
 
-Nit_connecter *
-nit_connecter_new(const char *path);
+enum nit_join_status {
+	NIT_JOIN_CLOSED = -2,
+	NIT_JOIN_ERROR,
+	NIT_JOIN_NONE,
+	NIT_JOIN_OK,
+};
 
-void
-nit_connecter_free(Nit_connecter *cntr);
-
-Nit_connection *
-nit_connection_connect(const char *path);
-
-Nit_connection *
-nit_connecter_accept(Nit_connecter *cntr);
+Nit_joiner *
+nit_joiner_new(const char *path);
 
 void
-nit_connection_free(Nit_connection *cntn);
+nit_joiner_free(Nit_joiner *jnr);
+
+Nit_joint *
+nit_joint_connect(const char *path);
+
+Nit_joint *
+nit_joiner_accept(Nit_joiner *jnr);
+
+void
+nit_joint_free(Nit_joint *jnt);
 
 int
-nit_connection_end_check(Nit_connection *cntn);
+nit_joint_end_check(Nit_joint *jnt);
 
 void
-nit_connection_end_mutate(Nit_connection *cntn, int value);
+nit_joint_end_mutate(Nit_joint *jnt, int value);
 
 void
-nit_connection_kill(Nit_connection *cntn);
+nit_joint_kill(Nit_joint *jnt);
 
-int
-nit_connection_read(Nit_connection *cntn,
-		    char **str, uint32_t *old_size,
-		    int *message_size, uint32_t offset);
+enum nit_join_status
+nit_joint_read(Nit_joint *jnt, char **buf, int32_t *old_size,
+	       int32_t *msg_size, int32_t offset);
 
 void
-nit_connection_send(Nit_connection *cntn,
-		    const void *msg, uint32_t msg_size);
+nit_joint_send(Nit_joint *jnt, const void *msg, int32_t msg_size);
 
 #if defined NIT_SHORT_NAMES || defined NIT_SOCKET_SHORT_NAMES
-# define connecter_new(...)         nit_connecter_new(__VA_ARGS__)
-# define connecter_free(...)        nit_connecter_free(__VA_ARGS__)
-# define connection_connect(...)    nit_connection_connect(__VA_ARGS__)
-# define connecter_accept(...)      nit_connecter_accept(__VA_ARGS__)
-# define connection_free(...)       nit_connection_free(__VA_ARGS__)
-# define connection_end_check(...)  nit_connection_end_check(__VA_ARGS__)
-# define connection_end_mutate(...) nit_connection_end_mutate(__VA_ARGS__)
-# define connection_kill(...)       nit_connection_kill(__VA_ARGS__)
-# define connection_read(...)       nit_connection_read(__VA_ARGS__)
-# define connection_send(...)       nit_connection_send(__VA_ARGS__)
+# define joiner_new(...)       nit_joiner_new(__VA_ARGS__)
+# define joiner_free(...)      nit_joiner_free(__VA_ARGS__)
+# define joint_connect(...)    nit_joint_connect(__VA_ARGS__)
+# define joiner_accept(...)    nit_joiner_accept(__VA_ARGS__)
+# define joint_free(...)       nit_joint_free(__VA_ARGS__)
+# define joint_end_check(...)  nit_joint_end_check(__VA_ARGS__)
+# define joint_end_mutate(...) nit_joint_end_mutate(__VA_ARGS__)
+# define joint_kill(...)       nit_joint_kill(__VA_ARGS__)
+# define joint_read(...)       nit_joint_read(__VA_ARGS__)
+# define joint_send(...)       nit_joint_send(__VA_ARGS__)
 #endif
