@@ -74,7 +74,7 @@ enum nit_join_status
 nit_joint_read(Nit_joint *jnt, char **buf, int32_t *old_size,
 	       int32_t *msg_size, int32_t offset);
 
-void
+int
 nit_joint_send(Nit_joint *jnt, const void *msg, int32_t msg_size);
 
 #if defined NIT_SHORT_NAMES || defined NIT_SOCKET_SHORT_NAMES

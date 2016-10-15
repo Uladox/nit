@@ -255,14 +255,18 @@ end:
 	return retval;
 }
 
-void
+int
 joint_send(Nit_joint *jnt, const void *msg, int32_t msg_size)
 {
-	if (!joint_end_check(jnt))
-		if (send(jnt->sd, &msg_size,
-			 sizeof(msg_size), MSG_NOSIGNAL) < 0 ||
-		    send(jnt->sd, msg, msg_size, MSG_NOSIGNAL) < 0) {
-			perror("send");
-			joint_end_mutate(jnt, 1);
-		}
+	if (joint_end_check(jnt))
+		return 0;
+
+	if (send(jnt->sd, &msg_size, sizeof(msg_size), MSG_NOSIGNAL) < 0 ||
+	    send(jnt->sd, msg, msg_size, MSG_NOSIGNAL) < 0) {
+		perror("send");
+
+		return 0;
+	}
+
+	return 1;
 }
