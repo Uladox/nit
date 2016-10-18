@@ -54,6 +54,24 @@ typedef struct {
 	     TMP = LIST, LIST ? (LIST = NIT_DLIST_PREV(LIST)) : NULL)
 
 static inline void
+nit_dlist_connect(void *first, void *next)
+{
+	NIT_LIST_CONS(first, next);
+
+	if (next)
+		NIT_DLIST_RCONS(next, first);
+}
+
+static inline void
+nit_dlist_rconnect(void *last, void *prev)
+{
+	NIT_DLIST_RCONS(last, prev);
+
+	if (prev)
+		NIT_LIST_CONS(prev, last);
+}
+
+static inline void
 nit_dlist_remove(void *list)
 {
 	/*             +----+
@@ -138,6 +156,8 @@ nit_dlist_move_b(void *first, void *next)
 # define PREV_REF(...)         NIT_PREV_REF(__VA_ARGS__)
 # define preveach(...)         nit_preveach(__VA_ARGS__)
 # define delayed_preveach(...) nit_delayed_preveach(__VA_ARGS__)
+# define dlist_connect(...)    nit_dlist_connect(__VA_ARGS__)
+# define dlist_rconnect(...)   nit_dlist_rconnect(__VA_ARGS__)
 # define dlist_put_after(...)  nit_dlist_put_after(__VA_ARGS__)
 # define dlist_remove(...)     nit_dlist_remove(__VA_ARGS__)
 # define dlist_move_a(...)     nit_dlist_move_a(__VA_ARGS__)
