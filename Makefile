@@ -2,7 +2,8 @@
 
 include config.mk
 
-SRC = hmap.c hmap-out.c socket.c bimap.c io.c gap-buf.c gc.c hset.c deque.c
+SRC = hmap.c hmap-out.c socket.c bimap.c io.c gap-buf.c gc.c hset.c deque.c \
+      urlist.c
 OBJ = $(SRC:.c=.o)
 
 LIB = libnit.a
