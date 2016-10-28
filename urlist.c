@@ -8,6 +8,7 @@
 #include "urlist.h"
 
 #define HALF(ARR) (ARRAY_UNITS(ARR) / 2)
+#define END(ARR) (ARR + ARRAY_UNITS(ARR) - 1)
 
 Nit_urlist4 *
 urlist4_new(void)
@@ -64,33 +65,73 @@ refit(Nit_urlist4 *list, void **half, void *val)
 	memcpy(last_half, list->arr, HALF(list->arr) / 2);
 	memset(list->arr, 0, HALF(list->arr) / 2);
 	/* [__AB] -> [_VAB] */
-	memset(last_half - 1, &val, sizeof(val));
+	memcpy(last_half - 1, &val, sizeof(val));
 }
 
-static inline int
-add(Nit_urlist4 *list, void **half)
+/* [EFGH] + [CD] -> [CDEF] + [GH] empty = 0 */
+/* [EFGH] + [C_] -> [CEFG] + [H_] empty = 0, left = 1 */
+/* [_EFG] + [CD] -> [CDEF] + [G_] empty = 1 */
+/* [__EF] + [CD] -> [CDEF] + [__] empty = 2 */
+static void
+copy_half(Nit_urlist4 *list, void **half, int empty, int left)
 {
 	void *half2[HALF(list->arr)];
+	void **last_half = list->arr + HALF(list->arr);
+	int diff = left - empty;
 
-	/* [EFGH] + [CD] -> [CDEF] + [GH] */
-	if (list->arr[0]) {
-		void **last_half = list->arr + HALF(list->arr);
-
-		/* [EFGH] -> [EFGH] + [GH] */
-		memcpy(half2, last_half, sizeof(half));
-		/* [EFGH] -> [CDEF] */
-		memcpy(last_half, list->arr, sizeof(half));
-		memcpy(list->arr, half, sizeof(half));
+	if (diff > 0) {
+		/* [XX] + [EFGH] -> [EFGH] + [GH] */
+		memcpy(half2, last_half, sizeof(half2));
+		/* [EFGH] -> [EFEF] */
+		memcpy(last_half, list->arr, sizeof(half2));
+		/* [EFEF] + [CD] -> [CDEF] + [CD] */
+		memcpy(list->arr, half, sizeof(half2));
 		/* [CD] + [GH] -> [GH] + [GH] */
 		memcpy(half, half2, sizeof(half2));
 
-		return 0;
+		return;
 	}
 
-	/* [__EF] + [CD] -> [CDEF] */
-	memcpy(list->arr, half, sizeof(half2));
+	/* Empty matches how much should be copied */
+	/* [XXXX] + [_EFGHIJK] -> [EFGHIJK_] + [IJK_] */
+	/* [XXXX] + [__EFGHIJ] -> [__EFGHIJ] + [IJ__] */
+	/* [XX] + [_EFG] -> [_EFG] + [G_] */
+	/* [XX] + [__EF] -> [__EF] + [__] */
+	memcpy(half2, END(list->arr) - (left - empty),
+	       left * sizeof(*half2));
 
-	return 1;
+	/* /\* [EFGH] -> [EFGH] + [GH] *\/ */
+	/* memcpy(half2, last_half, sizeof(half2)); */
+	/* [EFGH] + [CD] -> [CDEF] */
+	/* [_EFG] + [CD] -> [CDEF] */
+	/* [__EF] + [CD] -> [CDEF] */
+	memcpy(last_half, list->arr, sizeof(half2));
+	memcpy(list->arr, half, sizeof(half2));
+	/* [CD] + [GH] -> [GH] + [GH] */
+	/* [CD] + [_G] -> [_G] + [_G] */
+	memcpy(half, half2, sizeof(half2));
+}
+
+static inline int
+add(Nit_urlist4 *list, void **half, int *left)
+{
+	int empty = 0;
+	void **ptr = list->arr;
+
+	for (; !*ptr; ++ptr, ++empty);
+
+	copy_half(list, half, empty, *left);
+	*left -= empty;
+	/* if (list->arr[0]) { */
+
+	/* 	return 0; */
+	/* } */
+
+	/* [__EF] + [CD] -> [CDEF] */
+	/* memcpy(list->arr, half, sizeof(half2)); */
+	/* *left = 0; */
+
+	return !*left;
 }
 
 int
