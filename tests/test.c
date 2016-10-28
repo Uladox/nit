@@ -13,6 +13,7 @@
 #include "../bimap.h"
 #include "../gap-buf.h"
 #include "../gc.h"
+#include "../urlist.h"
 
 static void
 hmap_free_contents(void *key, void *storage)
@@ -192,6 +193,17 @@ test_gc(const MunitParameter params[], void* data)
 	munit_assert_int(gc_free(gc), ==, 0);
 }
 
+static MunitResult
+test_urlist(const MunitParameter params[], void* data)
+{
+	Nit_urlist4 *list = urlist4_new();
+	int num = 42;
+
+	munit_assert_not_null(list);
+	munit_assert_int(urlist4_insert(list, &num), ==, 1);
+	munit_assert_int(*(int *) urlist4_first(list), ==, num);
+}
+
 static MunitTest test_suite_tests[] = {
 	{ (char *) "/hmap", test_hmap,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
@@ -200,6 +212,8 @@ static MunitTest test_suite_tests[] = {
 	{ (char *) "/gap-buf", test_gap_buf,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ (char *) "/gc", test_gc,
+	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
+	{ (char *) "/urlist", test_urlist,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
 
@@ -220,5 +234,6 @@ main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 	/* test_hmap(NULL, NULL); */
 	/* test_gap_buf(NULL, NULL); */
 	/* test_gc(NULL, NULL); */
+	/* test_urlist(NULL, NULL); */
 	return munit_suite_main(&test_suite, NULL, argc, argv);
 }
