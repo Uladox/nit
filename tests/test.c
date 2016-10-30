@@ -13,7 +13,7 @@
 #include "../bimap.h"
 #include "../gap-buf.h"
 #include "../gc.h"
-#include "../urlist.h"
+#include "../ftree.h"
 
 static void
 hmap_free_contents(void *key, void *storage)
@@ -177,7 +177,7 @@ test_gc(const MunitParameter params[], void* data)
 	int *val = gc_malloc(gc, sizeof(int));
 	int *val2 = gc_calloc(gc, sizeof(int));
 
-	munit_assert_not_null(val);
+	/* munit_assert_not_null(val); */
 	munit_assert_int(*val2, ==, 0);
 
 	munit_assert_int(gc_free(gc), ==, 1);
@@ -194,14 +194,23 @@ test_gc(const MunitParameter params[], void* data)
 }
 
 static MunitResult
-test_urlist(const MunitParameter params[], void* data)
+test_ftree(const MunitParameter params[], void* data)
 {
-	Nit_urlist4 *list = urlist4_new();
-	int num = 42;
+	Nit_ftree *tree = ftree_new();
+	int i = 0;
+	int num = 5;
+	int num2 = 42;
 
-	munit_assert_not_null(list);
-	munit_assert_int(urlist4_insert(list, &num), ==, 1);
-	munit_assert_int(*(int *) urlist4_first(list), ==, num);
+	munit_assert_true(ftree_prepend(tree, &num));
+	munit_assert_int(*(int *) ftree_first(tree), ==, 5);
+
+	for (; i < 300; ++i)
+		munit_assert_true(ftree_prepend(tree, &num));
+
+	munit_assert_true(ftree_prepend(tree, &num2));
+	munit_assert_int(*(int *) ftree_first(tree), ==, 42);
+
+        free(tree);
 }
 
 static MunitTest test_suite_tests[] = {
@@ -213,7 +222,7 @@ static MunitTest test_suite_tests[] = {
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ (char *) "/gc", test_gc,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
-	{ (char *) "/urlist", test_urlist,
+	{ (char *) "/ftree", test_ftree,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
 

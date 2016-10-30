@@ -40,20 +40,11 @@ urlist4_new_set(void **half)
 void *
 urlist4_first(Nit_urlist4 *list)
 {
-	void **ptr;
-
 	for (; list; list = LIST_NEXT(list))
 		if (list->count)
-			goto ok;
+			return list->arr[ARRAY_UNITS(list->arr) - list->count];
 
 	return NULL;
-
-ok:
-	ptr = list->arr;
-
-	for (; !*ptr; ++ptr);
-
-	return *ptr;
 }
 
 void *
@@ -73,8 +64,8 @@ refit(Nit_urlist4 *list, void **half, void *val)
 	/* [ABCD] -> [ABCD] + [CD] */
 	memcpy(half, last_half, sizeof(list->arr) / 2);
 	/* [ABCD] -> [__AB] */
-	memcpy(last_half, list->arr, HALF(list->arr) / 2);
-	memset(list->arr, 0, HALF(list->arr) / 2);
+	memcpy(last_half, list->arr, sizeof(list->arr) / 2);
+	memset(list->arr, 0, sizeof(list->arr) / 2);
 	/* [__AB] -> [_VAB] */
 	memcpy(last_half - 1, &val, sizeof(val));
 }
@@ -94,6 +85,7 @@ copy_half(Nit_urlist4 *list, void **half, int empty, int passed)
 	int diff = passed - empty;
 
 	if (diff > 0) {
+		list->count = HALF(list->arr);
 		/* If there is stuff to store for latter, store it
 		 * [CD] + [EFGH] -> [GH]
 		 * [C_] + [EFGH] -> [H_]
@@ -108,8 +100,6 @@ copy_half(Nit_urlist4 *list, void **half, int empty, int passed)
 		memcpy(list->arr + passed, list->arr + empty,
 		       passed * sizeof(*list->arr));
 
-		memcpy(half, half2, diff * sizeof(*half2));
-
 	}
 
 	/* Copies half into list->arr at the right place */
@@ -118,15 +108,15 @@ copy_half(Nit_urlist4 *list, void **half, int empty, int passed)
 	memcpy(list->arr + ((diff >= 0) ? 0 : -diff),
 	       half, passed * sizeof(*half));
 
+	if (diff > 0)
+		memcpy(half, half2, diff * sizeof(*half2));
 }
 
+#include <stdio.h>
 static inline int
 add(Nit_urlist4 *list, void **half, int *left)
 {
-	int empty = 0; //ARRAY_UNITS(list->arr) - list->count;
-	void **ptr = list->arr;
-
-	for (; !*ptr; ++ptr, ++empty);
+	int empty = ARRAY_UNITS(list->arr) - list->count;
 
 	copy_half(list, half, empty, *left);
 	*left -= empty;
@@ -134,7 +124,7 @@ add(Nit_urlist4 *list, void **half, int *left)
 	return !*left;
 }
 
-#define INSERTED(LIST) (++(LIST)->count, 1)
+#define INSERTED(LIST, AMOUNT) (((LIST)->count += AMOUNT), 1)
 
 int
 urlist4_insert(Nit_urlist4 *list, void *val)
@@ -144,12 +134,13 @@ urlist4_insert(Nit_urlist4 *list, void *val)
 	int left;
 
 	if (!list->arr[0]) {
-		size_t i = 0;
+		int i = ARRAY_UNITS(list->arr);
 
-		for (; i < ARRAY_UNITS(list->arr); ++i)
+		while (i--)
 			if (!list->arr[i]) {
 				list->arr[i] = val;
-			        return INSERTED(list);
+				++list->count;
+			        return 1;
 			}
 	}
 
@@ -158,11 +149,11 @@ urlist4_insert(Nit_urlist4 *list, void *val)
 
 	for (; LIST_NEXT(list); list = LIST_NEXT(list))
 		if (add(LIST_NEXT(list), half, &left))
-			return INSERTED(list);
+			return 1;
 
 	new_list = urlist4_new_set(half);
 	pcheck(new_list, 0);
 	LIST_CONS(list, new_list);
 
-	return INSERTED(list);
+	return 1;
 }

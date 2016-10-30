@@ -1,6 +1,11 @@
 /* Include these
  * #include "list.h"
+ * #include "urlist_gen.h"
  */
+
+/* #define NIT_ARR_TYPE void * */
+
+/* #undef NIT_ARR_TYPE */
 
 typedef struct {
 	Nit_list list;
