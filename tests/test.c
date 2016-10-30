@@ -193,10 +193,34 @@ test_gc(const MunitParameter params[], void* data)
 	munit_assert_int(gc_free(gc), ==, 0);
 }
 
+void
+print_ftree(Nit_ftree *tree)
+{
+        int i;
+
+	foreach (tree) {
+		for (i = 0; i < FTREE_BS; ++i)
+			if (tree->pre[i])
+				printf("p");
+			else
+				printf("x");
+		printf("\n");
+		for (i = 0; i < FTREE_BS; ++i)
+			if (tree->suf[i])
+				printf("s");
+			else
+				printf("x");
+		printf("\n");
+		printf("\n");
+	}
+
+}
+
 static MunitResult
 test_ftree(const MunitParameter params[], void* data)
 {
 	Nit_ftree *tree = ftree_new();
+        int *val;
 	int i = 0;
 	int num = 5;
 	int num2 = 42;
@@ -204,11 +228,21 @@ test_ftree(const MunitParameter params[], void* data)
 	munit_assert_true(ftree_prepend(tree, &num));
 	munit_assert_int(*(int *) ftree_first(tree), ==, 5);
 
-	for (; i < 300; ++i)
+	for (; i < 299; ++i)
 		munit_assert_true(ftree_prepend(tree, &num));
 
 	munit_assert_true(ftree_prepend(tree, &num2));
 	munit_assert_int(*(int *) ftree_first(tree), ==, 42);
+	munit_assert_int(*(int *) ftree_pop(tree), ==, 42);
+
+	print_ftree(tree);
+
+	for (i = 0; val = ftree_pop(tree); ++i)
+		munit_assert_int(*val, ==, 5);
+
+	munit_assert_int(i, ==, 300);
+
+	/* print_ftree(tree); */
 
         free(tree);
 }
@@ -243,6 +277,6 @@ main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 	/* test_hmap(NULL, NULL); */
 	/* test_gap_buf(NULL, NULL); */
 	/* test_gc(NULL, NULL); */
-	/* test_urlist(NULL, NULL); */
-	return munit_suite_main(&test_suite, NULL, argc, argv);
+	test_ftree(NULL, NULL);
+	/* return munit_suite_main(&test_suite, NULL, argc, argv); */
 }
