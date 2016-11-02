@@ -60,8 +60,8 @@ single_to_multi_append(Nit_ftree *tree, void *elem)
 	tree->suf[0] = elem;
 }
 
-void *
-ftree_first(const Nit_ftree *tree)
+static inline void *
+ftree_get(const Nit_ftree *tree, const short *fixcnt, void *const *fix)
 {
 	switch (ftree_type(tree)) {
 	case EMPTY:
@@ -70,20 +70,19 @@ ftree_first(const Nit_ftree *tree)
 		return single_elem_get(tree);
 	}
 
-	return tree->pre[tree->precnt - 1];
+	return fix[*fixcnt - 1];
+}
+
+void *
+ftree_first(const Nit_ftree *tree)
+{
+	return ftree_get(tree, &tree->precnt, tree->pre);
 }
 
 void *
 ftree_last(const Nit_ftree *tree)
 {
-	switch (ftree_type(tree)) {
-	case EMPTY:
-		return NULL;
-	case SINGLE:
-		return single_elem_get(tree);
-	}
-
-	return tree->suf[tree->sufcnt - 1];
+	return ftree_get(tree, &tree->sufcnt, tree->suf);
 }
 
 static void
@@ -219,6 +218,17 @@ fix_to_fix(Nit_ftree *tree, short *tocnt, void **tofix,
 	fromfix[0] = NULL;
 }
 
+static inline void *
+take_val_off(short *fixcnt, void **fix)
+{
+	void *val = fix[*fixcnt - 1];
+
+        fix[*fixcnt - 1] = NULL;
+	--*fixcnt;
+
+	return val;
+}
+
 void *
 ftree_pop(Nit_ftree *tree)
 {
@@ -236,12 +246,8 @@ ftree_pop(Nit_ftree *tree)
 	}
 
 	/* [ABCD] -> [ABC_] */
-	if (likely(tree->precnt > 1)) {
-		val = tree->pre[tree->precnt - 1];
-		tree->pre[tree->precnt - 1] = NULL;
-		--tree->precnt;
-		return val;
-	}
+	if (likely(tree->precnt > 1))
+		return take_val_off(&tree->precnt, tree->pre);
 
 	val = tree->pre[0];
 
@@ -272,12 +278,8 @@ ftree_rpop(Nit_ftree *tree)
 	}
 
 	/* [ABCD] -> [ABC_] */
-	if (likely(tree->sufcnt > 1)) {
-		val = tree->suf[tree->sufcnt - 1];
-		tree->suf[tree->sufcnt - 1] = NULL;
-		--tree->sufcnt;
-		return val;
-	}
+	if (likely(tree->sufcnt > 1))
+		return take_val_off(&tree->sufcnt, tree->suf);
 
 	val = tree->suf[0];
 
@@ -291,38 +293,38 @@ ftree_rpop(Nit_ftree *tree)
 	return val;
 }
 
-static Nit_ftree *
-concat_middle(Nit_ftree *left, Nit_list *mid, Nit_ftree *right)
-{
-	Nit_ftree *result;
+/* static Nit_ftree * */
+/* concat_middle(Nit_ftree *left, Nit_list *mid, Nit_ftree *right) */
+/* { */
+/* 	Nit_ftree *result; */
 
-	if (!left) {
-		if (!mid)
-			return right;
+/* 	if (!left) { */
+/* 		if (!mid) */
+/* 			return right; */
 
-		result = concat_middle(NULL, LIST_NEXT(mid), right);
-		pcheck(result, NULL);
+/* 		result = concat_middle(NULL, LIST_NEXT(mid), right); */
+/* 		pcheck(result, NULL); */
 
-		if (!ftree_prepend(result, mid))
-			return NULL;
+/* 		if (!ftree_prepend(result, mid)) */
+/* 			return NULL; */
 
-		return result;
-	}
+/* 		return result; */
+/* 	} */
 
-	switch (ftree_type(left)) {
-	case EMPTY:
-		if (!mid)
-			return right;
+/* 	switch (ftree_type(left)) { */
+/* 	case EMPTY: */
+/* 		if (!mid) */
+/* 			return right; */
 
-		result = concat_middle(
-	}
-		return
+/* 		result = concat_middle( */
+/* 	} */
+/* 		return */
 
-	return concat_middle(left, NULL, right);
-}
+/* 	return concat_middle(left, NULL, right); */
+/* } */
 
-Nit_ftree *
-ftree_concat(Nit_ftree *left, Nit_ftree *right)
-{
-	return concat_middle(left, NULL, right);
-}
+/* Nit_ftree * */
+/* ftree_concat(Nit_ftree *left, Nit_ftree *right) */
+/* { */
+/* 	return concat_middle(left, NULL, right); */
+/* } */
