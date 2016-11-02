@@ -99,13 +99,32 @@ digit_set(void **digit, Branch *b, void *elem)
 	memset(digit + HALF, 0, sizeof(elem) * HALF);
 }
 
+static inline int
+next_tree_add(Nit_ftree **tree, short *fixcnt, void **fix, void **elem)
+{
+	Branch *b = palloc(b);
+	Nit_ftree *next = LIST_NEXT(*tree);
+
+	pcheck(b, 0);
+
+	if (unlikely(!next)) {
+		pcheck_c((next = ftree_new()), 0, free(b));
+		LIST_CONS(*tree, next);
+	}
+
+        *fixcnt = FTREE_BS / 2;
+	digit_set(fix, b, *elem);
+
+	*tree = next;
+	*elem = b;
+
+	return 1;
+}
+
 int
 ftree_prepend(Nit_ftree *tree, void *elem)
 {
-	Branch *b;
-	Nit_ftree *next;
-
-	for (;; tree = next, elem = b) {
+	while (1) {
 		switch (ftree_type(tree)) {
 		case EMPTY:
 			single_elem_set(tree, elem);
@@ -117,34 +136,23 @@ ftree_prepend(Nit_ftree *tree, void *elem)
 		}
 
 		if (likely(!tree->pre[ARR_END])) {
-			tree->pre[tree->precnt] = elem;
-			goto success;
+			tree->pre[tree->precnt++] = elem;
+			return 1;
 		}
 
-	        b = palloc(b);
-	        next = LIST_NEXT(tree);
-
-		if (unlikely(!next)) {
-			pcheck_c((next = ftree_new()), 0, free(b));
-			LIST_CONS(tree, next);
-		}
-
-		tree->precnt = FTREE_BS / 2;
-		digit_set(tree->pre, b, elem);
+		if (!next_tree_add(&tree, &tree->precnt, tree->pre, &elem))
+			return 0;
 	}
 
-success:
-	++tree->precnt;
-	return 1;
+	/* Should never reach here */
+
+	return 0;
 }
 
 int
 ftree_append(Nit_ftree *tree, void *elem)
 {
-	Branch *b;
-	Nit_ftree *next;
-
-	for (;; tree = next, elem = b) {
+	while (1) {
 		switch (ftree_type(tree)) {
 		case EMPTY:
 			single_elem_set(tree, elem);
@@ -156,33 +164,65 @@ ftree_append(Nit_ftree *tree, void *elem)
 		}
 
 		if (likely(!tree->suf[ARR_END])) {
-			tree->suf[tree->sufcnt] = elem;
-			goto success;
+			tree->suf[tree->sufcnt++] = elem;
+		        return 1;
 		}
 
-	        b = palloc(b);
-	        next = LIST_NEXT(tree);
-
-		if (unlikely(!next)) {
-			pcheck_c((next = ftree_new()), 0, free(b));
-			LIST_CONS(tree, next);
-		}
-
-		tree->sufcnt = FTREE_BS / 2;
-		digit_set(tree->suf, b, elem);
+		if (!next_tree_add(&tree, &tree->sufcnt, tree->suf, &elem))
+			return 0;
 	}
 
-success:
-	++tree->sufcnt;
+	return 0;
+}
+
+static inline int
+promote_node(Nit_ftree *tree, short *fixcnt, void **fix)
+{
+	Nit_ftree *next = LIST_NEXT(tree);
+	Branch *b;
+
+	if (unlikely(!next || !(b = ftree_pop(next))))
+		return 0;
+
+	if (unlikely(ftree_type(next) == EMPTY)) {
+		free(next);
+		LIST_CONS(tree, NULL);
+	}
+
+
+	*fixcnt = ARRAY_UNITS(b->elems);
+	memcpy(fix, b->elems, sizeof(b->elems));
+	free(b);
+
 	return 1;
+}
+
+static inline void
+fix_to_fix(Nit_ftree *tree, short *tocnt, void **tofix,
+	   short *fromcnt, void **fromfix)
+{
+	if (likely(*fromcnt != 1)) {
+		int last_entry = *fromcnt - 1;
+
+		memcpy(tofix, fromfix, sizeof(*fromfix) * last_entry);
+		fromfix[0] = fromfix[last_entry];
+		memset(fromfix + 1, 0, sizeof(*fromfix) * last_entry);
+		fromfix[last_entry] = NULL;
+	        *tocnt = *fromcnt;
+		*tocnt = 1;
+		return;
+	}
+
+	/* Makes single */
+	*fromcnt = 0;
+	single_elem_set(tree, fromfix[0]);
+	fromfix[0] = NULL;
 }
 
 void *
 ftree_pop(Nit_ftree *tree)
 {
 	void *val;
-	Branch *b;
-	Nit_ftree *next;
 
 	/* [] [X] */
 	switch (ftree_type(tree)) {
@@ -204,36 +244,85 @@ ftree_pop(Nit_ftree *tree)
 	}
 
 	val = tree->pre[0];
-	next = LIST_NEXT(tree);
 
 	/* [A___] + [[BCD] [EFG] [HIJ]] -> [BCD_] */
-        if (likely(next && (b = ftree_pop(next)))) {
-		if (unlikely(ftree_type(next) == EMPTY)) {
-			free(next);
-			LIST_CONS(tree, NULL);
-		}
-
-
-		tree->precnt = ARRAY_UNITS(b->elems);
-		memcpy(tree->pre, b->elems, sizeof(b->elems));
-		free(b);
+        if (promote_node(tree, &tree->precnt, tree->pre))
 		return val;
-	}
 
 	/* Suffix to prefix */
-	if (likely(tree->sufcnt != 1)) {
-		memcpy(tree->pre, tree->suf, sizeof(val) * (tree->sufcnt - 1));
-		tree->suf[0] = tree->suf[tree->sufcnt - 1];
-		memset(tree->suf + 1, 0, sizeof(val) * (tree->sufcnt - 1));
+	fix_to_fix(tree, &tree->precnt, tree->pre, &tree->sufcnt, tree->suf);
+
+	return val;
+}
+
+void *
+ftree_rpop(Nit_ftree *tree)
+{
+	void *val;
+
+	/* [] [X] */
+	switch (ftree_type(tree)) {
+		case EMPTY:
+			return NULL;
+		case SINGLE:
+		        val = single_elem_get(tree);
+			single_elem_set(tree, NULL);
+			tree->precnt = tree->sufcnt = 0;
+			return val;
+	}
+
+	/* [ABCD] -> [ABC_] */
+	if (likely(tree->sufcnt > 1)) {
+		val = tree->suf[tree->sufcnt - 1];
 		tree->suf[tree->sufcnt - 1] = NULL;
-		tree->precnt = tree->sufcnt;
-		tree->sufcnt = 1;
+		--tree->sufcnt;
 		return val;
 	}
 
-	/* Makes single */
-	tree->sufcnt = 0;
-	single_elem_set(tree, tree->suf[0]);
-	tree->suf[0] = NULL;
+	val = tree->suf[0];
+
+	/* [A___] + [[BCD] [EFG] [HIJ]] -> [BCD_] */
+        if (promote_node(tree, &tree->sufcnt, tree->suf))
+		return val;
+
+	/* Suffix to prefix */
+	fix_to_fix(tree, &tree->sufcnt, tree->suf, &tree->precnt, tree->pre);
+
 	return val;
+}
+
+static Nit_ftree *
+concat_middle(Nit_ftree *left, Nit_list *mid, Nit_ftree *right)
+{
+	Nit_ftree *result;
+
+	if (!left) {
+		if (!mid)
+			return right;
+
+		result = concat_middle(NULL, LIST_NEXT(mid), right);
+		pcheck(result, NULL);
+
+		if (!ftree_prepend(result, mid))
+			return NULL;
+
+		return result;
+	}
+
+	switch (ftree_type(left)) {
+	case EMPTY:
+		if (!mid)
+			return right;
+
+		result = concat_middle(
+	}
+		return
+
+	return concat_middle(left, NULL, right);
+}
+
+Nit_ftree *
+ftree_concat(Nit_ftree *left, Nit_ftree *right)
+{
+	return concat_middle(left, NULL, right);
 }

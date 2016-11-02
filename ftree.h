@@ -8,6 +8,7 @@
 typedef struct {
 	Nit_list deeper;
 	short precnt, sufcnt;
+	int refs;
 	void *pre[NIT_FTREE_BS]; /* grows -> */
 	void *suf[NIT_FTREE_BS]; /* grows -> */
 } Nit_ftree;
@@ -30,6 +31,9 @@ nit_ftree_append(Nit_ftree *tree, void *elem);
 void *
 nit_ftree_pop(Nit_ftree *tree);
 
+void *
+nit_ftree_rpop(Nit_ftree *tree);
+
 #if defined NIT_SHORT_NAMES || defined NIT_FTREE_SHORT_NAMES
 # define FTREE_BS NIT_FTREE_BS
 # define ftree_new(...)     nit_ftree_new(__VA_ARGS__)
@@ -38,4 +42,5 @@ nit_ftree_pop(Nit_ftree *tree);
 # define ftree_prepend(...) nit_ftree_prepend(__VA_ARGS__)
 # define ftree_append(...)  nit_ftree_append(__VA_ARGS__)
 # define ftree_pop(...)     nit_ftree_pop(__VA_ARGS__)
+# define ftree_rpop(...)    nit_ftree_rpop(__VA_ARGS__)
 #endif
