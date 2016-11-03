@@ -1,4 +1,5 @@
 /* Include these
+ * #include <stdint.h>
  * #include "list.h"
  */
 
@@ -7,14 +8,21 @@
 
 typedef struct {
 	Nit_list deeper;
-	short precnt, sufcnt;
-	int refs;
+	uint8_t precnt, sufcnt;
+	uint16_t depth;
+	uint32_t refs;
 	void *pre[NIT_FTREE_BS]; /* grows -> */
 	void *suf[NIT_FTREE_BS]; /* grows -> */
 } Nit_ftree;
 
 Nit_ftree *
-nit_ftree_new(void);
+nit_ftree_new(short depth);
+
+Nit_ftree *
+nit_ftree_copy(Nit_ftree *tree);
+
+void
+nit_ftree_reduce(Nit_ftree *tree);
 
 void *
 nit_ftree_first(const Nit_ftree *tree);
@@ -37,6 +45,8 @@ nit_ftree_rpop(Nit_ftree *tree);
 #if defined NIT_SHORT_NAMES || defined NIT_FTREE_SHORT_NAMES
 # define FTREE_BS NIT_FTREE_BS
 # define ftree_new(...)     nit_ftree_new(__VA_ARGS__)
+# define ftree_copy(...)    nit_ftree_copy(__VA_ARGS__)
+# define ftree_reduce(...)  nit_ftree_reduce(__VA_ARGS__)
 # define ftree_first(...)   nit_ftree_first(__VA_ARGS__)
 # define ftree_last(...)    nit_ftree_last(__VA_ARGS__)
 # define ftree_prepend(...) nit_ftree_prepend(__VA_ARGS__)
