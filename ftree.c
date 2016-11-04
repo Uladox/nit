@@ -389,59 +389,68 @@ ftree_rpop(Nit_ftree *tree)
 	return val;
 }
 
-/* static Nit_ftree * */
-/* concat_middle(Nit_ftree *left, Nit_dlist *mid, Nit_ftree *right, int *error) */
-/* { */
-/* 	Nit_ftree *result; */
+typedef struct {
+	Nit_dlist list;
+	Branch *branch;
+} Node_list;
 
-/* 	/\* just right, keep prepending, deal with single first *\/ */
-/* 	/\* just left, keep appending, deal with single first *\/ */
+typedef struct {
+	Node_list *front;
+        Node_list *end;
+	void *remain[HALF - 1];
+} Nodes;
 
-/* 	if (!left) { */
-/* 		if (!right) */
-/* 			return NULL; */
+static Nit_ftree *
+concat_middle(Nit_ftree *left, Nit_dlist *mid, Nit_ftree *right, int *error)
+{
+	Nit_ftree *result;
 
-/* 		if (!mid) */
-/* 			return right; */
+	/* just right, keep prepending, deal with single first */
+	/* just left, keep appending, deal with single first */
 
-/* 	        for (; LIST_NEXT(mid); mid = LIST_NEXT(mid)); */
+	while (1) {
 
-/* 		preveach (mid) */
-/* 			if (!ftree_prepend(right, mid)) { */
-/* 				*error = 1; */
-/* 				return NULL; */
-/* 			} */
+	}
 
-/* 		return right; */
-/* 	} */
+	if (!left) {
+		if (!mid)
+			return right;
 
-/* 	if (!right) { */
-/* 		if (!left) */
-/* 			return NULL; */
+	        for (; LIST_NEXT(mid); mid = LIST_NEXT(mid));
 
-/* 		if (!mid) */
-/* 			return left; */
+		preveach (mid)
+			if (!ftree_prepend(right, mid)) {
+				*error = 1;
+				return NULL;
+			}
 
-/* 		foreach (mid) */
-/* 			if (!ftree_append(left, mid)) { */
-/* 				*error = 1; */
-/* 				return NULL; */
-/* 			} */
+		return right;
+	}
 
-/* 		return left; */
-/* 	} */
+	if (!right) {
+		if (!mid)
+			return left;
 
-/* 	switch (ftree_type(left)) { */
-/* 	case EMPTY: */
-/* 		if (!mid) */
-/* 			return right; */
+		foreach (mid)
+			if (!ftree_append(left, mid)) {
+				*error = 1;
+				return NULL;
+			}
 
-/* 		result = concat_middle( */
-/* 	} */
-/* 		return */
+		return left;
+	}
 
-/* 	return concat_middle(left, NULL, right); */
-/* } */
+	switch (ftree_type(left)) {
+	case EMPTY:
+		if (!mid)
+			return right;
+
+		result = concat_middle(
+	}
+		return
+
+	return concat_middle(left, NULL, right);
+}
 
 /* Nit_ftree * */
 /* ftree_concat(Nit_ftree *left, Nit_ftree *right) */

@@ -238,15 +238,6 @@ test_ftree(const MunitParameter params[], void* data)
 	munit_assert_int(*(int *) ftree_first(tree), ==, 42);
 	munit_assert_int(*(int *) ftree_pop(tree), ==, 42);
 
-	print_ftree(tree);
-
-	/* foreach (tree) */
-	/* 	printf("depth: %" PRId16 "\n" */
-	/* 	       "pre: %" PRId8 "\n" */
-	/* 	       "suf: %" PRId8 "\n", */
-	/* 	       tree->depth, tree->precnt, tree->sufcnt); */
-	/* return; */
-
 	for (i = 0; val = ftree_pop(tree); ++i)
 		munit_assert_int(*val, ==, 5);
 
@@ -294,6 +285,6 @@ main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 	/* test_hmap(NULL, NULL); */
 	/* test_gap_buf(NULL, NULL); */
 	/* test_gc(NULL, NULL); */
-	test_ftree(NULL, NULL);
-	/* return munit_suite_main(&test_suite, NULL, argc, argv); */
+	/* test_ftree(NULL, NULL); */
+	return munit_suite_main(&test_suite, NULL, argc, argv);
 }
