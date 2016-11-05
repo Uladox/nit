@@ -15,7 +15,7 @@ typedef struct {
 	void *elems[HALF + 1];
 } Branch;
 
-enum ftree_type { EMPTY=0, SINGLE=1 };
+enum ftree_type { EMPTY = 0, SINGLE = 1 };
 
 Nit_ftree *
 ftree_new(short depth)
@@ -403,29 +403,29 @@ typedef struct {
 static Nit_ftree *
 concat_middle(Nit_ftree *left, Nit_dlist *mid, Nit_ftree *right, int *error)
 {
-	Nit_ftree *result;
+	Nit_ftree *result = ftree_new(0);
+	Nit_ftree *level = result;
 
 	/* just right, keep prepending, deal with single first */
 	/* just left, keep appending, deal with single first */
 
-	while (1) {
+	for (; right || left; LIST_INC(right), LIST_INC(left)) {
+		if (!left) {
+			if (!mid)
+				return right;
 
-	}
+			for (; LIST_NEXT(mid); mid = LIST_NEXT(mid));
 
-	if (!left) {
-		if (!mid)
+			preveach (mid)
+				if (!ftree_prepend(right, mid)) {
+					*error = 1;
+					return NULL;
+				}
+
 			return right;
-
-	        for (; LIST_NEXT(mid); mid = LIST_NEXT(mid));
-
-		preveach (mid)
-			if (!ftree_prepend(right, mid)) {
-				*error = 1;
-				return NULL;
-			}
-
-		return right;
+		}
 	}
+
 
 	if (!right) {
 		if (!mid)

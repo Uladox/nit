@@ -27,6 +27,8 @@ typedef struct {
 	((Nit_list *) (LIST))
 #define NIT_LIST_NEXT(LIST)			\
 	((typeof(LIST)) (NIT_LIST(LIST)->next))
+#define NIT_LIST_INC(LIST)			\
+	(LIST = NIT_LIST_NEXT(LIST))
 #define NIT_LIST_CONS(LIST, END)		\
 	(NIT_LIST(LIST)->next = (END))
 #define NIT_NEXT_REF(LIST)			\
@@ -34,14 +36,16 @@ typedef struct {
 #define nit_foreach(LIST)			\
 	for (; LIST; LIST = NIT_LIST_NEXT(LIST))
 #define nit_delayed_foreach(TMP, LIST)					\
-	for (TMP = LIST, LIST ? (LIST = NIT_LIST_NEXT(LIST)) : NULL;	\
+	for (TMP = LIST, LIST ? NIT_LIST_INC(LIST) : NULL;		\
 	     TMP;							\
-	     TMP = LIST, LIST ? (LIST = NIT_LIST_NEXT(LIST)) : NULL)
+	     TMP = LIST, LIST ? NIT_LIST_INC(LIST) : NULL)
 
 #define NIT_DLIST(LIST)				\
 	((Nit_dlist *) LIST)
 #define NIT_DLIST_PREV(LIST)			\
 	((typeof(LIST)) (NIT_DLIST(LIST)->prev))
+#define NIT_DLIST_DEC(LIST)			\
+	(LIST = NIT_DLIST_PREV(LIST))
 #define NIT_DLIST_RCONS(LIST, BEGIN)		\
 	(NIT_DLIST(LIST)->prev = (BEGIN))
 #define NIT_PREV_REF(LIST)				\
@@ -49,9 +53,9 @@ typedef struct {
 #define nit_preveach(LIST)				\
 	for (; LIST; LIST = NIT_DLIST_PREV(LIST))
 #define nit_delayed_preveach(TMP, LIST)					\
-	for (TMP = LIST, LIST ? (LIST = NIT_DLIST_PREV(LIST)) : NULL;	\
+	for (TMP = LIST, LIST ? NIT_DLIST_DEC(LIST) : NULL;	\
 	     TMP;							\
-	     TMP = LIST, LIST ? (LIST = NIT_DLIST_PREV(LIST)) : NULL)
+	     TMP = LIST, LIST ? NIT_DLIST_DEC(LIST) : NULL)
 
 static inline void
 nit_dlist_connect(void *first, void *next)
@@ -147,11 +151,13 @@ nit_dlist_move_b(void *first, void *next)
 
 #if defined NIT_SHORT_NAMES || defined NIT_LIST_SHORT_NAMES
 # define LIST_NEXT(...)        NIT_LIST_NEXT(__VA_ARGS__)
+# define LIST_INC(...)         NIT_LIST_INC(__VA_ARGS__)
 # define LIST_CONS(...)        NIT_LIST_CONS(__VA_ARGS__)
 # define NEXT_REF(...)         NIT_NEXT_REF(__VA_ARGS__)
 # define foreach(...)          nit_foreach(__VA_ARGS__)
 # define delayed_foreach(...)  nit_delayed_foreach(__VA_ARGS__)
 # define DLIST_PREV(...)       NIT_DLIST_PREV(__VA_ARGS__)
+# define LIST_DEC(...)         NIT_LIST_DEC(__VA_ARGS__)
 # define DLIST_RCONS(...)      NIT_DLIST_RCONS(__VA_ARGS__)
 # define PREV_REF(...)         NIT_PREV_REF(__VA_ARGS__)
 # define preveach(...)         nit_preveach(__VA_ARGS__)
