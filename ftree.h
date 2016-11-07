@@ -4,16 +4,27 @@
  */
 
 /* Branch size */
-#define NIT_FTREE_BS 4
+#define NIT_FTREE_BS 8
+
+typedef struct {
+	int refs;
+        short cnt, max;
+	void *elems[];
+} Nit_fbnch;
 
 typedef struct {
 	Nit_list deeper;
-	uint8_t precnt, sufcnt;
-	uint16_t depth;
-	uint32_t refs;
-	void *pre[NIT_FTREE_BS]; /* grows -> */
+        void *pre[NIT_FTREE_BS]; /* grows -> */
 	void *suf[NIT_FTREE_BS]; /* grows -> */
+	uint32_t refs;
+	uint16_t depth;
+	uint8_t precnt, sufcnt;
 } Nit_ftree;
+
+typedef struct {
+	Nit_ftree *trees;
+	Nit_fbnch *bnchs[NIT_FTREE_BS - 1];
+} Nit_fmem;
 
 Nit_ftree *
 nit_ftree_new(short depth);

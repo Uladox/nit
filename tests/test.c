@@ -285,6 +285,12 @@ main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 	/* test_hmap(NULL, NULL); */
 	/* test_gap_buf(NULL, NULL); */
 	/* test_gc(NULL, NULL); */
+	/* Nit_ftree f; */
+	/* Nit_fbnch b; */
+	/* printf("%zu, %zu, %zu\n", sizeof(Nit_ftree), sizeof(f.pre), */
+	/*        sizeof(f) - (sizeof(f.pre) + sizeof(f.suf))); */
+	/* printf("%zu, %zu, %zu\n", sizeof(b), sizeof(b.elems), */
+	/*        sizeof(b.refs)); */
 	/* test_ftree(NULL, NULL); */
 	return munit_suite_main(&test_suite, NULL, argc, argv);
 }
