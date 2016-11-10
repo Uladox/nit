@@ -223,6 +223,7 @@ static MunitResult
 test_ftree(const MunitParameter params[], void* data)
 {
 	Nit_ftree *tree = ftree_new(0);
+	Nit_ftree *tree2;
         int *val;
 	int i = 0;
 	int num = 5;
@@ -238,6 +239,8 @@ test_ftree(const MunitParameter params[], void* data)
 	munit_assert_int(*(int *) ftree_first(tree), ==, 42);
 	munit_assert_int(*(int *) ftree_pop(tree), ==, 42);
 
+	tree2 = ftree_copy(tree);
+
 	for (i = 0; val = ftree_pop(tree); ++i)
 		munit_assert_int(*val, ==, 5);
 
@@ -247,11 +250,14 @@ test_ftree(const MunitParameter params[], void* data)
 	munit_assert_true(ftree_append(tree, &num));
 	munit_assert_int(*(int *) ftree_rpop(tree), ==, 5);
 
-	/* printf("size: %zu\n", sizeof(*tree)); */
+	/* for (i = 0; val = ftree_pop(tree2); ++i) */
+	/* 	munit_assert_int(*val, ==, 5); */
 
-	/* print_ftree(tree); */
+	/* munit_assert_int(i, ==, 300); */
 
         ftree_reduce(tree);
+	ftree_reduce(tree2);
+
 	return MUNIT_OK;
 }
 
@@ -291,6 +297,6 @@ main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 	/*        sizeof(f) - (sizeof(f.pre) + sizeof(f.suf))); */
 	/* printf("%zu, %zu, %zu\n", sizeof(b), sizeof(b.elems), */
 	/*        sizeof(b.refs)); */
-	/* test_ftree(NULL, NULL); */
-	return munit_suite_main(&test_suite, NULL, argc, argv);
+	test_ftree(NULL, NULL);
+	/* return munit_suite_main(&test_suite, NULL, argc, argv); */
 }

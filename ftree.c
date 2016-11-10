@@ -34,8 +34,8 @@ fbnch_new_arr(void **arr, int cnt, int depth)
 	bnch->cnt = cnt;
 	memcpy(bnch->elems, arr, elems);
 
-	if (depth > 0)
-		bnch_inc_refs(bnch, cnt);
+	/* if (depth > 0) */
+	/* 	bnch_inc_refs(bnch, cnt); */
 
 	return bnch;
 }
@@ -56,15 +56,17 @@ ftree_new(short depth)
 static void
 ftree_bnch_inc_refs(Nit_ftree *tree)
 {
-	Nit_fbnch **bnch = (Nit_fbnch **) tree->suf;
+	int i = 0;
+	Nit_fbnch **bnch = (Nit_fbnch **) tree->pre;
 
-	while (*bnch)
-		++(*bnch)->refs;
+	for (; i < tree->precnt; ++i)
+		++bnch[i]->refs;
 
-	bnch = (Nit_fbnch **) tree->pre;
+	i = 0;
+	bnch = (Nit_fbnch **) tree->suf;
 
-	while (*bnch)
-		++(*bnch)->refs;
+	for (; i < tree->sufcnt; ++i)
+		++bnch[i]->refs;
 }
 
 Nit_ftree *
@@ -80,7 +82,8 @@ ftree_copy(Nit_ftree *tree)
 	if (next)
 		++next->refs;
 
-	ftree_bnch_inc_refs(copy);
+	if (tree->depth > 0)
+		ftree_bnch_inc_refs(copy);
 
 	return copy;
 }
@@ -104,6 +107,9 @@ reduce_branches(Nit_fbnch *b, short depth)
 	free(b);
 }
 
+#include <stdio.h>
+#include <inttypes.h>
+
 void
 ftree_reduce(Nit_ftree *tree)
 {
@@ -119,6 +125,8 @@ ftree_reduce(Nit_ftree *tree)
 
 	for (; i < tree->precnt; ++i)
 		reduce_branches(tree->pre[i], tree->depth);
+
+	i = 0;
 
 	for (; i < tree->sufcnt; ++i)
 		reduce_branches(tree->suf[i], tree->depth);
@@ -337,7 +345,9 @@ promote_node(Nit_ftree *tree, uint8_t *fixcnt, void **fix)
 	*fixcnt = b->cnt;
 	memcpy(fix, b->elems, b->cnt * sizeof(void *));
 
-	if (b->refs == 1)
+	printf("hi %" PRIu32 "\n", b->refs);
+
+	if (b->refs-- == 1)
 		free(b);
 
 	return 1;
