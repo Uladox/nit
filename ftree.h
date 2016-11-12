@@ -53,6 +53,9 @@ nit_ftree_pop(Nit_ftree *tree);
 void *
 nit_ftree_rpop(Nit_ftree *tree);
 
+Nit_ftree *
+nit_ftree_concat(Nit_ftree *left, Nit_ftree *right);
+
 #if defined NIT_SHORT_NAMES || defined NIT_FTREE_SHORT_NAMES
 # define FTREE_BS NIT_FTREE_BS
 # define ftree_new(...)     nit_ftree_new(__VA_ARGS__)
@@ -64,4 +67,5 @@ nit_ftree_rpop(Nit_ftree *tree);
 # define ftree_append(...)  nit_ftree_append(__VA_ARGS__)
 # define ftree_pop(...)     nit_ftree_pop(__VA_ARGS__)
 # define ftree_rpop(...)    nit_ftree_rpop(__VA_ARGS__)
+# define ftree_concat(...)  nit_ftree_concat(__VA_ARGS__)
 #endif
