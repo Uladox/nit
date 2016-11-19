@@ -17,7 +17,7 @@ typedef struct {
         void *pre[NIT_FTREE_BS]; /* grows -> */
 	void *suf[NIT_FTREE_BS]; /* grows -> */
 	uint32_t refs;
-	uint16_t depth;
+	/* uint16_t depth; */
 	uint8_t precnt, sufcnt;
 } Nit_ftree;
 
@@ -27,13 +27,13 @@ typedef struct {
 } Nit_fmem;
 
 Nit_ftree *
-nit_ftree_new(short depth);
+nit_ftree_new(void);
 
 Nit_ftree *
-nit_ftree_copy(Nit_ftree *tree);
+nit_ftree_copy(Nit_ftree *tree, int depth);
 
 void
-nit_ftree_reduce(Nit_ftree *tree);
+nit_ftree_reduce(Nit_ftree *tree, int depth);
 
 void *
 nit_ftree_first(const Nit_ftree *tree);
@@ -42,16 +42,16 @@ void *
 nit_ftree_last(const Nit_ftree *tree);
 
 int
-nit_ftree_prepend(Nit_ftree *tree, void *elem);
+nit_ftree_prepend(Nit_ftree *tree, void *elem, int depth);
 
 int
-nit_ftree_append(Nit_ftree *tree, void *elem);
+nit_ftree_append(Nit_ftree *tree, void *elem, int depth);
 
 void *
-nit_ftree_pop(Nit_ftree *tree);
+nit_ftree_pop(Nit_ftree *tree, int depth);
 
 void *
-nit_ftree_rpop(Nit_ftree *tree);
+nit_ftree_rpop(Nit_ftree *tree, int depth);
 
 Nit_ftree *
 nit_ftree_concat(Nit_ftree *left, Nit_ftree *right);

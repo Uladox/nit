@@ -38,14 +38,14 @@ fbnch_new_arr(void **arr, int cnt)
 }
 
 Nit_ftree *
-ftree_new(short depth)
+ftree_new(void)
 {
 	Nit_ftree *tree = palloc(tree);
 
 	pcheck(tree, NULL);
 	memset(tree, 0, sizeof(*tree));
 	tree->refs = 1;
-	tree->depth = depth;
+	/* tree->depth = depth; */
 
 	return tree;
 }
@@ -67,7 +67,7 @@ ftree_inc_bnch_refs(Nit_ftree *tree)
 }
 
 Nit_ftree *
-ftree_copy(Nit_ftree *tree)
+ftree_copy(Nit_ftree *tree, int depth)
 {
 	Nit_ftree *copy = palloc(copy);
 	Nit_ftree *next = LIST_NEXT(tree);
@@ -79,14 +79,14 @@ ftree_copy(Nit_ftree *tree)
 	if (next)
 		++next->refs;
 
-	if (tree->depth > 0)
+	if (depth > 0)
 		ftree_inc_bnch_refs(copy);
 
 	return copy;
 }
 
 static void
-reduce_branches(Nit_fbnch *b, short depth)
+reduce_branches(Nit_fbnch *b, int depth)
 {
 	int i = 0;
 
@@ -105,7 +105,7 @@ reduce_branches(Nit_fbnch *b, short depth)
 }
 
 void
-ftree_reduce(Nit_ftree *tree)
+ftree_reduce(Nit_ftree *tree, int depth)
 {
 	int i = 0;
 
@@ -115,39 +115,39 @@ ftree_reduce(Nit_ftree *tree)
 	if (--tree->refs)
 		return;
 
-	ftree_reduce(LIST_NEXT(tree));
+	ftree_reduce(LIST_NEXT(tree), depth + 1);
 
 	for (; i < tree->precnt; ++i)
-		reduce_branches(tree->pre[i], tree->depth);
+		reduce_branches(tree->pre[i], depth);
 
 	i = 0;
 
 	for (; i < tree->sufcnt; ++i)
-		reduce_branches(tree->suf[i], tree->depth);
+		reduce_branches(tree->suf[i], depth);
 
 	free(tree);
 }
 
 static Nit_ftree *
-mut_usable(Nit_ftree *tree)
+mut_usable(Nit_ftree *tree, int depth)
 {
 	Nit_ftree *copy;
 
 	if (tree->refs == 1)
 		return tree;
 
-	pcheck(copy = ftree_copy(tree), NULL);
-	ftree_reduce(tree);
+	pcheck(copy = ftree_copy(tree, depth), NULL);
+	ftree_reduce(tree, depth);
 
 	return copy;
 }
 
 static Nit_ftree *
-mut_next(Nit_ftree *tree)
+mut_next(Nit_ftree *tree, int depth)
 {
 	Nit_ftree *next = LIST_NEXT(tree);
-	Nit_ftree *tmp = next ? mut_usable(next) :
-		ftree_new(tree->depth + 1);
+	Nit_ftree *tmp = next ? mut_usable(next, depth + 1) :
+		ftree_new();
 
 	pcheck(tmp, NULL);
 
@@ -216,10 +216,11 @@ ftree_last(const Nit_ftree *tree)
 }
 
 static inline int
-next_tree_add(Nit_ftree **tree, uint8_t *fixcnt, void **fix, void **elem)
+next_tree_add(Nit_ftree **tree, uint8_t *fixcnt, void **fix, void **elem,
+	      int depth)
 {
 	Nit_fbnch *b = fbnch_new_arr(fix, FTREE_BS);
-	Nit_ftree *next = mut_next(*tree);
+	Nit_ftree *next = mut_next(*tree, depth);
 
 	pcheck_c(next, 0, free(b));
 
@@ -234,9 +235,9 @@ next_tree_add(Nit_ftree **tree, uint8_t *fixcnt, void **fix, void **elem)
 }
 
 int
-ftree_prepend(Nit_ftree *tree, void *elem)
+ftree_prepend(Nit_ftree *tree, void *elem, int depth)
 {
-	while (1) {
+	for (;; ++depth) {
 		switch (ftree_type(tree)) {
 		case EMPTY:
 			single_elem_set(tree, elem);
@@ -252,7 +253,7 @@ ftree_prepend(Nit_ftree *tree, void *elem)
 			return 1;
 		}
 
-		if (!next_tree_add(&tree, &tree->precnt, tree->pre, &elem))
+		if (!next_tree_add(&tree, &tree->precnt, tree->pre, &elem, depth))
 			return 0;
 	}
 
@@ -260,9 +261,9 @@ ftree_prepend(Nit_ftree *tree, void *elem)
 }
 
 int
-ftree_append(Nit_ftree *tree, void *elem)
+ftree_append(Nit_ftree *tree, void *elem, int depth)
 {
-	while (1) {
+        for (;; ++depth) {
 		switch (ftree_type(tree)) {
 		case EMPTY:
 			single_elem_set(tree, elem);
@@ -278,7 +279,7 @@ ftree_append(Nit_ftree *tree, void *elem)
 			return 1;
 		}
 
-		if (!next_tree_add(&tree, &tree->sufcnt, tree->suf, &elem))
+		if (!next_tree_add(&tree, &tree->sufcnt, tree->suf, &elem, depth))
 			return 0;
 	}
 
@@ -286,7 +287,7 @@ ftree_append(Nit_ftree *tree, void *elem)
 }
 
 static inline int
-promote_node(Nit_ftree *tree, uint8_t *fixcnt, void **fix)
+promote_node(Nit_ftree *tree, uint8_t *fixcnt, void **fix, int depth)
 {
 	Nit_ftree *next = LIST_NEXT(tree);
 	Nit_fbnch *b;
@@ -294,14 +295,14 @@ promote_node(Nit_ftree *tree, uint8_t *fixcnt, void **fix)
 	if (unlikely(!next))
 		return 0;
 
-	next = mut_next(tree);
+	next = mut_next(tree, depth);
 	pcheck(next, 0);
 
-	if (!(b = ftree_pop(next)))
+	if (!(b = ftree_pop(next, depth + 1)))
 		return 0;
 
 	if (unlikely(ftree_type(next) == EMPTY)) {
-		ftree_reduce(next);
+		ftree_reduce(next, depth + 1);
 		LIST_CONS(tree, NULL);
 	}
 
@@ -313,7 +314,7 @@ promote_node(Nit_ftree *tree, uint8_t *fixcnt, void **fix)
 
 	if (b->refs-- == 1)
 		free(b);
-	else if (tree->depth > 0)
+	else if (depth > 0)
 		bnch_inc_refs(b);
 
 	return 1;
@@ -354,7 +355,7 @@ take_val_off(uint8_t *fixcnt, void **fix)
 }
 
 void *
-ftree_pop(Nit_ftree *tree)
+ftree_pop(Nit_ftree *tree, int depth)
 {
 	void *val;
 
@@ -376,7 +377,7 @@ ftree_pop(Nit_ftree *tree)
 	val = tree->pre[0];
 
 	/* [A___] + [[BCD] [EFG] [HIJ]] -> [BCD_] */
-	if (promote_node(tree, &tree->precnt, tree->pre))
+	if (promote_node(tree, &tree->precnt, tree->pre, depth))
 		return val;
 
 	/* Suffix to prefix */
@@ -386,7 +387,7 @@ ftree_pop(Nit_ftree *tree)
 }
 
 void *
-ftree_rpop(Nit_ftree *tree)
+ftree_rpop(Nit_ftree *tree, int depth)
 {
 	void *val;
 
@@ -408,7 +409,7 @@ ftree_rpop(Nit_ftree *tree)
 	val = tree->suf[0];
 
 	/* [A___] + [[BCD] [EFG] [HIJ]] -> [BCD_] */
-	if (promote_node(tree, &tree->sufcnt, tree->suf))
+	if (promote_node(tree, &tree->sufcnt, tree->suf, depth))
 		return val;
 
 	/* Suffix to prefix */
@@ -418,9 +419,9 @@ ftree_rpop(Nit_ftree *tree)
 }
 
 static Nit_ftree *
-concat_top(Nit_ftree *left, Nit_ftree *right)
+concat_top(Nit_ftree *left, Nit_ftree *right, int depth)
 {
-	Nit_ftree *tree = ftree_new(left->depth);
+	Nit_ftree *tree = ftree_new();
 
 	pcheck(tree, NULL);
 	memcpy(tree->pre, left->pre, sizeof(left->pre));
@@ -428,7 +429,7 @@ concat_top(Nit_ftree *left, Nit_ftree *right)
 	memcpy(tree->suf, right->suf, sizeof(right->suf));
 	tree->sufcnt = right->sufcnt;
 
-	if (tree->depth > 0)
+	if (depth > 0)
 		ftree_inc_bnch_refs(tree);
 
 	return tree;
@@ -476,40 +477,40 @@ error:
 }
 
 static int
-concat_mid_append(Nit_ftree *layer, Nit_fbnch **mid, int elems)
+concat_mid_append(Nit_ftree *layer, Nit_fbnch **mid, int elems, int depth)
 {
 	while (elems--)
-		if (!ftree_append(layer, mid[elems]))
+		if (!ftree_append(layer, mid[elems], depth))
 			return 0;
 	return 1;
 }
 
 static int
-concat_mid_prepend(Nit_ftree *layer, Nit_fbnch **mid, int elems)
+concat_mid_prepend(Nit_ftree *layer, Nit_fbnch **mid, int elems, int depth)
 {
 	int i = 0;
 
 	while (i < elems)
-		if (!ftree_prepend(layer, mid[i++]))
+		if (!ftree_prepend(layer, mid[i++], depth))
 			return 0;
 	return 1;
 }
 
 static inline Nit_ftree *
-concat_error(Nit_ftree *top)
+concat_error(Nit_ftree *top, int depth)
 {
-	ftree_reduce(top);
+	ftree_reduce(top, depth);
 
 	return NULL;
 }
 
 static int
 concat_rfinal(Nit_ftree **layer, Nit_ftree *right,
-	      Nit_fbnch **mid, int elems)
+	      Nit_fbnch **mid, int elems, int depth)
 {
-	pcheck((*layer = ftree_copy(right)), -1);
+	pcheck((*layer = ftree_copy(right, depth)), -1);
 
-	if (!concat_mid_append(*layer, mid, elems))
+	if (!concat_mid_append(*layer, mid, elems, depth))
 		return -1;
 
 	return 1;
@@ -517,11 +518,11 @@ concat_rfinal(Nit_ftree **layer, Nit_ftree *right,
 
 static int
 concat_lfinal(Nit_ftree **layer, Nit_ftree *left,
-	      Nit_fbnch **mid, int elems)
+	      Nit_fbnch **mid, int elems, int depth)
 {
-	pcheck((*layer = ftree_copy(left)), -1);
+	pcheck((*layer = ftree_copy(left, depth)), -1);
 
-	if (!concat_mid_prepend(*layer, mid, elems))
+	if (!concat_mid_prepend(*layer, mid, elems, depth))
 		return -1;
 
 	return 1;
@@ -529,13 +530,13 @@ concat_lfinal(Nit_ftree **layer, Nit_ftree *left,
 
 static int
 concat_srfinal(Nit_ftree **layer, Nit_ftree *right,
-	       Nit_ftree *left, Nit_fbnch **mid, int elems)
+	       Nit_ftree *left, Nit_fbnch **mid, int elems, int depth)
 {
-	pcheck((*layer = ftree_copy(right)), -1);
-	ftree_prepend(*layer, single_elem_get(left));
+	pcheck((*layer = ftree_copy(right, depth)), -1);
+	ftree_prepend(*layer, single_elem_get(left), depth);
 
 
-	if (!concat_mid_append(*layer, mid, elems))
+	if (!concat_mid_append(*layer, mid, elems, depth))
 		return -1;
 
 	return 1;
@@ -543,12 +544,12 @@ concat_srfinal(Nit_ftree **layer, Nit_ftree *right,
 
 static int
 concat_slfinal(Nit_ftree **layer, Nit_ftree *left,
-	       Nit_ftree *right, Nit_fbnch **mid, int elems)
+	       Nit_ftree *right, Nit_fbnch **mid, int elems, int depth)
 {
-	pcheck((*layer = ftree_copy(left)), -1);
-	ftree_append(*layer, single_elem_get(right));
+	pcheck((*layer = ftree_copy(left, depth)), -1);
+	ftree_append(*layer, single_elem_get(right), depth);
 
-	if (!concat_mid_prepend(*layer, mid, elems))
+	if (!concat_mid_prepend(*layer, mid, elems, depth))
 		return -1;
 
 	return 1;
@@ -556,21 +557,21 @@ concat_slfinal(Nit_ftree **layer, Nit_ftree *left,
 
 static int
 concat_finals(Nit_ftree **layer, Nit_ftree *left,
-	      Nit_ftree *right, Nit_fbnch **mid, int elems)
+	      Nit_ftree *right, Nit_fbnch **mid, int elems, int depth)
 {
 	enum ftree_type type = NONE;
 
 	if (!left || (type = ftree_type(left)) == EMPTY)
-		return concat_rfinal(layer, right, mid, elems);
+		return concat_rfinal(layer, right, mid, elems, depth);
 
 	if (type == SINGLE)
-		return concat_srfinal(layer, right, left, mid, elems);
+		return concat_srfinal(layer, right, left, mid, elems, depth);
 
 	if (!right || (type = ftree_type(right)) == EMPTY)
-		return concat_lfinal(layer, left, mid, elems);
+		return concat_lfinal(layer, left, mid, elems, depth);
 
 	if (type == SINGLE)
-		return concat_slfinal(layer, left, right, mid, elems);
+		return concat_slfinal(layer, left, right, mid, elems, depth);
 
 	return 0;
 }
@@ -588,9 +589,9 @@ ftree_concat(Nit_ftree *left, Nit_ftree *right)
 	     (LIST_INC(right), LIST_INC(left),
 	      layer = NEXT_REF(*layer), ++depth)) {
 
-		switch (concat_finals(layer, left, right, mid, elems)) {
+		switch (concat_finals(layer, left, right, mid, elems, depth)) {
 		case -1:
-			return concat_error(top);
+			return concat_error(top, depth);
 		case 0:
 			break;
 		case 1:
@@ -598,19 +599,19 @@ ftree_concat(Nit_ftree *left, Nit_ftree *right)
 		}
 
 
-		pcheck((*layer = concat_top(left, right)), NULL);
+		pcheck((*layer = concat_top(left, right, depth)), NULL);
 
 
 		if (!nodes(&elems, depth, mid,
 			   left->sufcnt, left->suf, right->precnt, right->pre))
-		        return concat_error(top);
+		        return concat_error(top, depth);
 	}
 
 	if (elems) {
-		pcheck(*layer = ftree_new(depth), NULL);
+		pcheck(*layer = ftree_new(), NULL);
 
-		if (!concat_mid_prepend(*layer, mid, elems))
-			return concat_error(top);
+		if (!concat_mid_prepend(*layer, mid, elems, depth))
+			return concat_error(top, depth);
 	}
 
 	return top;
