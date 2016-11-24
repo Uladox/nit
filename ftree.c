@@ -11,6 +11,7 @@
 #define ARR_END (FTREE_BS - 1)
 
 enum ftree_type { EMPTY = 0, SINGLE = 1 };
+
 #define NONE (SINGLE + 1)
 
 static void
@@ -24,12 +25,13 @@ bnch_inc_refs(Nit_fbnch *bnch)
 }
 
 static Nit_fbnch *
-fbnch_new_arr(void **arr, int cnt)
+fbnch_new(void **arr, int cnt)
 {
 	size_t elems = cnt * sizeof(void *);
 	Nit_fbnch *bnch = malloc(sizeof(*bnch) + elems);
 
 	pcheck(bnch, NULL);
+	bnch->ano = NULL;
 	bnch->refs = 1;
 	bnch->cnt = cnt;
 	memcpy(bnch->elems, arr, elems);
@@ -45,7 +47,6 @@ ftree_new(void)
 	pcheck(tree, NULL);
 	memset(tree, 0, sizeof(*tree));
 	tree->refs = 1;
-	/* tree->depth = depth; */
 
 	return tree;
 }
@@ -219,7 +220,7 @@ static inline int
 next_tree_add(Nit_ftree **tree, uint8_t *fixcnt, void **fix, void **elem,
 	      int depth)
 {
-	Nit_fbnch *b = fbnch_new_arr(fix, FTREE_BS);
+	Nit_fbnch *b = fbnch_new(fix, FTREE_BS);
 	Nit_ftree *next = mut_next(*tree, depth);
 
 	pcheck_c(next, 0, free(b));
@@ -307,10 +308,7 @@ promote_node(Nit_ftree *tree, uint8_t *fixcnt, void **fix, int depth)
 	}
 
 	*fixcnt = b->cnt;
-
 	memcpy(fix, b->elems, b->cnt * sizeof(void *));
-
-	/* printf("hi %" PRIu32 "\n", b->refs); */
 
 	if (b->refs-- == 1)
 		free(b);
@@ -330,7 +328,6 @@ fix_to_fix(Nit_ftree *tree, uint8_t *tocnt, void **tofix,
 		memcpy(tofix, fromfix, sizeof(*fromfix) * last_entry);
 		fromfix[0] = fromfix[last_entry];
 		memset(fromfix + 1, 0, sizeof(*fromfix) * last_entry);
-		/* fromfix[last_entry] = NULL; */
 		*tocnt = *fromcnt - 1;
 		*fromcnt = 1;
 		return;
@@ -458,11 +455,11 @@ nodes(int *elems, int depth, Nit_fbnch **mid, int lsufcnt, void **lsuf,
 	memcpy(arr + lsufcnt + *elems, rpre, rprecnt * sizeof(*rpre));
 
 	for (; cnt > FTREE_BS; cnt -= FTREE_BS, arr_ptr += FTREE_BS)
-		if (!(mid[new_elems++] = fbnch_new_arr(arr_ptr, FTREE_BS)))
+		if (!(mid[new_elems++] = fbnch_new(arr_ptr, FTREE_BS)))
 			goto error;
 
 	if (cnt)
-		if (!(mid[new_elems++] = fbnch_new_arr(arr_ptr, cnt)))
+		if (!(mid[new_elems++] = fbnch_new(arr_ptr, cnt)))
 			goto error;
 
 	*elems = new_elems;
