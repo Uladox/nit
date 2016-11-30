@@ -38,13 +38,6 @@ joiner_new(const char *path)
 	Nit_joiner *jnr = palloc(jnr);
 
 	pcheck(jnr, NULL);
-
-	if (access(path, F_OK) >= 0 && unlink(path) < 0) {
-		perror("unlink");
-
-		return NULL;
-	}
-
 	jnr->sd = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	if (jnr->sd < 0) {
@@ -54,8 +47,9 @@ joiner_new(const char *path)
 	        return NULL;
 	}
 
+	memset(&jnr->socket, 0, sizeof(jnr->socket));
 	jnr->socket.sun_family = AF_UNIX;
-	strcpy(jnr->socket.sun_path, path);
+	strcpy(jnr->socket.sun_path + 1, path);
 	len = strlen(path) + sizeof(jnr->socket.sun_family);
 
 	if (bind(jnr->sd, (struct sockaddr *) &jnr->socket, len) < 0) {
@@ -90,8 +84,9 @@ joint_connect(const char *path)
 		return NULL;
 	}
 
+	memset(&jnt->socket, 0, sizeof(jnt->socket));
 	jnt->socket.sun_family = AF_UNIX;
-	strcpy(jnt->socket.sun_path, path);
+	strcpy(jnt->socket.sun_path + 1, path);
 	jnt->len = strlen(path) + sizeof(jnt->socket.sun_family);
 
 	pthread_mutex_init(&jnt->end_mutex, NULL);
