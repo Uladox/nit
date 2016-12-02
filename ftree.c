@@ -14,6 +14,12 @@ enum { EMPTY = 0, SINGLE = 1 };
 
 #define NEITHER (SINGLE + 1)
 
+static Nit_fbnch *fbnch_prepend(Nit_fmem *mem, Nit_fnat nat,
+				Nit_fbnch *bnch, void *extra)
+{
+	
+}
+
 static inline int
 reset_ano(Nit_fnat nat, union nit_ano *ano, void *extra)
 {

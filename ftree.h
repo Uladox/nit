@@ -2,47 +2,11 @@
  * #include <stdint.h>
  * #include "list.h"
  */
-
-/* Branch size */
-#define NIT_FTREE_BS 8
-
-enum nit_ftop {
-	NIT_FT_RESET,
-	NIT_FT_DEC,
-	NIT_FT_MES_DAT,
-	NIT_FT_MES_ANO,
-	NIT_FT_COPY
-};
-
-union nit_ano {
-	float flt;
-	intptr_t num;
-	void *ptr;
-};
-
-/* mesure distinction */
-enum nit_fmesd { NIT_FT_DAT, NIT_FT_ANO };
-
-typedef int (*Nit_fsrch)(enum nit_fmesd des, void *acc,
-			 void *subj, void *extra);
-
-typedef int (*Nit_fnat)(enum nit_ftop op, union nit_ano *subj,
-			void *add, void *extra);
-
-typedef struct {
-	union nit_ano ano;
-	int refs;
-        short cnt, max;
-	void *elems[];
-} Nit_fbnch;
-
 typedef struct {
 	Nit_list deeper;
 	union nit_ano ano;
-        void *pre[NIT_FTREE_BS];
-	void *suf[NIT_FTREE_BS];
+	Nit_fbnch *pre, *suf;
 	uint32_t refs;
-	uint8_t precnt, sufcnt;
 } Nit_ftree;
 
 Nit_ftree *
