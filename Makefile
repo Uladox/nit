@@ -3,7 +3,7 @@
 include config.mk
 
 SRC = hmap.c hmap-out.c socket.c bimap.c io.c gap-buf.c gc.c hset.c deque.c \
-      ftree.c
+      ftree.c fbnch.c
 OBJ = $(SRC:.c=.o)
 
 LIB = libnit.a

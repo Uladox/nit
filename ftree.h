@@ -1,8 +1,9 @@
 /* Include these
  * #include <stdint.h>
  * #include "list.h"
+ * #include "fbnch.h"
  */
-typedef struct {
+typedef struct nit_ftree {
 	Nit_list deeper;
 	union nit_ano ano;
 	Nit_fbnch *pre, *suf;
@@ -10,13 +11,13 @@ typedef struct {
 } Nit_ftree;
 
 Nit_ftree *
-nit_ftree_new(void);
+nit_ftree_new(Nit_fdat *dat);
 
 Nit_ftree *
-nit_ftree_copy(Nit_fnat nat, Nit_ftree *tree, int depth, void *extra);
+nit_ftree_copy(Nit_fdat *dat, Nit_ftree *tree);
 
 void
-nit_ftree_reduce(Nit_fnat nat, Nit_ftree *tree, int depth, void *extra);
+nit_ftree_reduce(Nit_fdat *dat, Nit_ftree *tree, int depth);
 
 void *
 nit_ftree_first(const Nit_ftree *tree);
@@ -25,35 +26,24 @@ void *
 nit_ftree_last(const Nit_ftree *tree);
 
 int
-nit_ftree_prepend(Nit_fnat nat, Nit_ftree *tree, void *elem,
-		  int depth, void *extra);
+nit_ftree_prepend(Nit_fdat *dat, Nit_ftree *tree, void *elem, int depth);
 
 int
-nit_ftree_append(Nit_fnat nat, Nit_ftree *tree, void *elem,
-		 int depth, void *extra);
+nit_ftree_append(Nit_fdat *dat, Nit_ftree *tree, void *elem, int depth);
 
 void *
-nit_ftree_pop(Nit_fnat nat, Nit_ftree *tree, int depth, void *extra);
+nit_ftree_pop(Nit_fdat *dat, Nit_ftree *tree, int depth);
 
 void *
-nit_ftree_rpop(Nit_fnat nat, Nit_ftree *tree, int depth, void *extra);
+nit_ftree_rpop(Nit_fdat *dat, Nit_ftree *tree, int depth);
 
-Nit_ftree *
-nit_ftree_concat(Nit_fnat nat, Nit_ftree *left, Nit_ftree *right, void *extra);
+/* Nit_ftree * */
+/* nit_ftree_concat(Nit_fnat nat, Nit_ftree *left, Nit_ftree *right, void *extra); */
 
-void *
-nit_ftree_search(Nit_fsrch srch, Nit_ftree *tree, void *acc, void *extra);
+/* void * */
+/* nit_ftree_search(Nit_fsrch srch, Nit_ftree *tree, void *acc, void *extra); */
 
 #if defined NIT_SHORT_NAMES || defined NIT_FTREE_SHORT_NAMES
-# define FTREE_BS NIT_FTREE_BS
-# define FT_RESET    NIT_FT_RESET
-# define FT_INC      NIT_FT_INC
-# define FT_DEC      NIT_FT_DEC
-# define FT_MES_DAT  NIT_FT_MES_DAT
-# define FT_MES_ANO  NIT_FT_MES_ANO
-# define FT_COPY     NIT_FT_COPY
-# define FT_DAT NIT_FT_DAT
-# define FT_ANO NIT_FT_ANO
 # define ftree_new(...)     nit_ftree_new(__VA_ARGS__)
 # define ftree_copy(...)    nit_ftree_copy(__VA_ARGS__)
 # define ftree_reduce(...)  nit_ftree_reduce(__VA_ARGS__)
