@@ -2,12 +2,26 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <stdio.h>
+
 #define NIT_SHORT_NAMES
 #include "macros.h"
 #include "palloc.h"
 #include "fbnch.h"
 
 #define FBNCH(PTR) ((Nit_fbnch *) (PTR))
+
+Nit_fmem *
+fmem_new(int elems)
+{
+	size_t mem_size = sizeof(Nit_fmem) +
+		(elems * sizeof(Nit_fbnch *));
+	Nit_fmem *mem = malloc(mem_size);
+
+	memset(mem, 0, mem_size);
+
+	return mem;
+}
 
 static inline enum nit_anop
 mes_choice(int depth)
@@ -18,12 +32,15 @@ mes_choice(int depth)
 static Nit_fbnch *
 fmem_get_bnch(Nit_fmem *mem, int cnt)
 {
+	size_t mem_size = sizeof(Nit_fbnch) + sizeof(void *) * cnt;
 	Nit_fbnch *bnch = mem->bnchs[cnt - 1];
 
-	if (!bnch) {
-		bnch = malloc(sizeof(*bnch) + sizeof(void *) * cnt);
-		memset(bnch, 0, sizeof(*bnch) + sizeof(void *) * cnt);
-	}
+	if (!bnch)
+	        pcheck(bnch = malloc(mem_size), NULL);
+	else
+		mem->bnchs[cnt - 1] = bnch->elems[0];
+
+	memset(bnch, 0, mem_size);
 
 	return bnch;
 }
@@ -32,7 +49,7 @@ static void
 fmem_put_bnch(Nit_fmem *mem, Nit_fbnch *bnch)
 {
 	bnch->elems[0] = mem->bnchs[bnch->cnt - 1];
-	mem->bnchs[bnch->cnt - 1] = bnch;
+	mem->bnchs[bnch->cnt - 1] = bnch;;
 }
 
 void
@@ -40,8 +57,9 @@ fbnch_inc_refs(Nit_fbnch *bnch)
 {
 	int i = 0;
 
-	for (; i < bnch->cnt; ++i)
+	for (; i < bnch->cnt; ++i) {
 		++((Nit_fbnch *) bnch->elems[i])->refs;
+	}
 }
 
 Nit_fbnch *
@@ -67,7 +85,7 @@ fbnch_new(Nit_fdat *dat, void *elem, int depth)
 Nit_fbnch *
 fbnch_new_arr(Nit_fdat *dat, void **arr, int cnt, int depth)
 {
-	size_t elems = cnt * sizeof(void *);
+	size_t elems = cnt * sizeof(*arr);
 	Nit_fbnch *bnch = fmem_get_bnch(dat->mem, cnt);
 	enum nit_anop op = mes_choice(depth);
 	int i = 0;
@@ -95,7 +113,10 @@ fbnch_reduce(Nit_fdat *dat, Nit_fbnch *bnch, int depth)
 {
 	int i = 0;
 
-	if (!depth || !bnch || --bnch->refs > 0)
+	if (!bnch)
+		return;
+
+	if (--bnch->refs > 0)
 		return;
 
 	if (depth > 1)
@@ -138,11 +159,9 @@ fbnch_prepend(Nit_fdat *dat, Nit_fbnch **bnch, void *elem, int depth)
 		return 0;
 	}
 
-	if (depth > 0)
-		++((Nit_fbnch *) elem)->refs;
-
-	if (depth > 0)
-		fbnch_inc_refs(old);
+	if (depth > 0) {
+		fbnch_inc_refs(new);
+	}
 
 	fbnch_reduce(dat, old, depth);
 	*bnch = new;
@@ -188,9 +207,14 @@ fbnch_pop(Nit_fdat *dat, Nit_fbnch **bnch, int depth)
 	Nit_fbnch *old = *bnch;
 	void *val = fbnch_first(old);
 
-	if (old->cnt == 1)
+	if (old->cnt == 1) {
 		*bnch = NULL;
-	else if (!(*bnch = fbnch_new_arr(dat, old->elems + 1,
+
+		if (val && depth > 0) {
+			printf("\ndepth: %i\n", depth);
+			++((Nit_fbnch *) val)->refs;
+		}
+	} else if (!(*bnch = fbnch_new_arr(dat, old->elems + 1,
 					 old->cnt - 1, depth)))
 		return NULL;
 
@@ -215,22 +239,44 @@ fbnch_rpop(Nit_fdat *dat, Nit_fbnch **bnch, int depth)
 	return val;
 }
 
+static inline int
+search_leafs(Nit_fsrch srch, Nit_fbnch *bnch, void *acc, void *ext)
+{
+	int i = 0;
+
+	for (; i < bnch->cnt; ++i)
+		if (srch(FT_DAT, acc, bnch->elems[i], ext))
+			break;
+
+	return i;
+}
+
+static inline int
+search_nodes(Nit_fsrch srch, Nit_fbnch *bnch, void *acc, void *ext)
+{
+	int i = 0;
+
+	for (; i < bnch->cnt; ++i)
+		if (srch(FT_ANO, acc, &FBNCH(bnch->elems[i])->ano, ext))
+		        break;
+
+	return i;
+}
+
 void *
 fbnch_search(Nit_fsrch srch, Nit_fbnch *bnch, void *acc,
 	     void *ext, int depth)
 {
-	int i;
+	void *rtnval;
 
-	for (;; bnch = bnch->elems[i], --depth) {
-		if (!depth)
-			for (i = 0; i < bnch->cnt; ++i)
-				if (srch(FT_DAT, acc, bnch->elems[i], ext))
-					return bnch->elems[i];
+	for (;; --depth) {
+		if (!depth) {
+			rtnval = bnch->elems[search_leafs(srch, bnch, acc, ext)];
+			break;
+		}
 
-		for (i = 0; i < bnch->cnt; ++i)
-			if (srch(FT_ANO, acc, &FBNCH(bnch->elems[i])->ano, ext))
-				break;
+		bnch = bnch->elems[search_nodes(srch, bnch, acc, ext)];
 	}
 
-	return NULL;
+	return rtnval;
 }

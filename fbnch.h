@@ -45,6 +45,8 @@ typedef struct {
 	int max_elems;
 } Nit_fdat;
 
+
+
 static inline void
 nit_fdat_set(Nit_fdat *dat, Nit_fmem *mem, void *ext,
 	     Nit_fnat nat, int max_elems)
@@ -54,6 +56,9 @@ nit_fdat_set(Nit_fdat *dat, Nit_fmem *mem, void *ext,
 	dat->nat = nat;
 	dat->max_elems = max_elems;
 }
+
+Nit_fmem *
+nit_fmem_new(int elems);
 
 void
 nit_fbnch_inc_refs(Nit_fbnch *bnch);
@@ -99,6 +104,7 @@ nit_fbnch_search(Nit_fsrch srch, Nit_fbnch *bnch,
 # define FT_DAT NIT_FT_DAT
 # define FT_ANO NIT_FT_ANO
 # define fdat_set(...)       nit_fdat_set(__VA_ARGS__)
+# define fmem_new(...)       nit_fmem_new(__VA_ARGS__)
 # define fbnch_inc_refs(...) nit_fbnch_inc_refs(__VA_ARGS__)
 # define fbnch_new(...)      nit_fbnch_new(__VA_ARGS__)
 # define fbnch_new_arr(...)  nit_fbnch_new_arr(__VA_ARGS__)

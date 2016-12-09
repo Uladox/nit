@@ -311,9 +311,9 @@ ftree_append(Nit_fdat *dat, Nit_ftree *tree, void *elem, int depth)
 		if (sufcnt(tree) < dat->max_elems)
 			return fbnch_append(dat, &tree->suf, elem, depth);
 
-		tmp = tree->pre;
+		tmp = tree->suf;
 
-		if (!(tree->pre = fbnch_new(dat, elem, depth)))
+		if (!(tree->suf = fbnch_new(dat, elem, depth)))
 			return 0;
 
 		elem = tmp;
@@ -336,8 +336,6 @@ ftree_pop(Nit_fdat *dat, Nit_ftree *tree, int depth)
 		case EMPTY:
 			return NULL;
 		case SINGLE:
-			if (!tree->pre)
-				printf("\nwot?!\n");
 			reset_ano(dat->nat, &tree->ano, dat->ext);
 		        return fbnch_pop(dat, &tree->pre, depth);
 	}
@@ -348,7 +346,7 @@ ftree_pop(Nit_fdat *dat, Nit_ftree *tree, int depth)
 		goto end;
 
 	if (!LIST_NEXT(tree)) {
-		printf("how!\n");
+		printf("\nwot?!\n");
 		tree->pre = tree->suf;
 		tree->suf = NULL;
 
@@ -397,6 +395,8 @@ ftree_rpop(Nit_fdat *dat, Nit_ftree *tree, int depth)
 		goto end;
 
 	if (!LIST_NEXT(tree)) {
+		printf("\nwot?!\n");
+
 		if (precnt(tree) == 1)
 			goto end;
 

@@ -224,30 +224,39 @@ static MunitResult
 test_basic_ftree(const MunitParameter params[], void* data)
 {
 	Nit_fdat dat;
-	size_t mem_size = sizeof(Nit_ftree) + 7 * sizeof(Nit_fbnch *);
-	Nit_fmem *mem = malloc(mem_size);
+	Nit_fmem *mem = fmem_new(8);
 	Nit_ftree *tree;
 	char *str1 = "hello";
 	char *str2 = " ";
 	char *str3 = "world!";
+	int i;
 
-	memset(mem, 0, mem_size);
         fdat_set(&dat, mem, NULL, nat_ral, 8);
 	tree = ftree_new(&dat);
 
-	munit_assert_null(ftree_first(tree));
+	/* munit_assert_null(ftree_first(tree)); */
 
-	ftree_append(&dat, tree, str2, 0);
-	munit_assert_string_equal(str2, ftree_first(tree));
-	ftree_append(&dat, tree, str3, 0);
-	munit_assert_string_equal(str3, ftree_last(tree));
-	ftree_prepend(&dat, tree, str1, 0);
-	munit_assert_string_equal(str1, ftree_first(tree));
+	/* ftree_append(&dat, tree, str2, 0); */
+	/* munit_assert_string_equal(str2, ftree_first(tree)); */
+	/* ftree_append(&dat, tree, str3, 0); */
+	/* munit_assert_string_equal(str3, ftree_last(tree)); */
+	/* ftree_prepend(&dat, tree, str1, 0); */
+	/* munit_assert_string_equal(str1, ftree_first(tree)); */
 
-	munit_assert_string_equal(str1, ftree_pop(&dat, tree, 0));
-	munit_assert_string_equal(str2, ftree_pop(&dat, tree, 0));
-	munit_assert_string_equal(str3, ftree_pop(&dat, tree, 0));
+	/* munit_assert_string_equal(str1, ftree_pop(&dat, tree, 0)); */
+	/* munit_assert_string_equal(str2, ftree_pop(&dat, tree, 0)); */
+	/* munit_assert_string_equal(str3, ftree_pop(&dat, tree, 0)); */
 
+	for (i = 0; i < 300; ++i) {
+		ftree_prepend(&dat, tree, str1, 0);
+		/* ftree_append(&dat, tree, str2, 0); */
+	}
+
+	while (--i) {
+		/* printf("%i\n", i); */
+		munit_assert_string_equal(str1, ftree_pop(&dat, tree, 0));
+		/* munit_assert_string_equal(str2, ftree_rpop(&dat, tree, 0)); */
+	}
 
 	return MUNIT_OK;
 }
