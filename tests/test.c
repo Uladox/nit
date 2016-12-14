@@ -249,14 +249,20 @@ test_basic_ftree(const MunitParameter params[], void* data)
 
 	for (i = 0; i < 300; ++i) {
 		ftree_prepend(&dat, tree, str1, 0);
-		/* ftree_append(&dat, tree, str2, 0); */
+		ftree_append(&dat, tree, str2, 0);
 	}
 
-	while (--i) {
-		/* printf("%i\n", i); */
+	for (i = 0; i < 300; ++i) {
+		/* ftree_pop(&dat, tree, 0); */
 		munit_assert_string_equal(str1, ftree_pop(&dat, tree, 0));
-		/* munit_assert_string_equal(str2, ftree_rpop(&dat, tree, 0)); */
+		munit_assert_string_equal(str2, ftree_rpop(&dat, tree, 0));
 	}
+
+	/* while (--i) { */
+	/* 	/\* printf("%i\n", i); *\/ */
+	/* 	munit_assert_string_equal(str1, ftree_pop(&dat, tree, 0)); */
+	/* 	munit_assert_string_equal(str2, ftree_rpop(&dat, tree, 0)); */
+	/* } */
 
 	return MUNIT_OK;
 }

@@ -187,6 +187,7 @@ static inline int
 single_to_multi_prepend(Nit_fdat *dat, Nit_ftree *tree, void *elem, int depth)
 {
 	tree->suf = tree->pre;
+	tree->pre = NULL;
 
 	return single_elem_set(dat, tree, elem, depth);
 }
@@ -346,7 +347,6 @@ ftree_pop(Nit_fdat *dat, Nit_ftree *tree, int depth)
 		goto end;
 
 	if (!LIST_NEXT(tree)) {
-		printf("\nwot?!\n");
 		tree->pre = tree->suf;
 		tree->suf = NULL;
 
@@ -354,7 +354,6 @@ ftree_pop(Nit_fdat *dat, Nit_ftree *tree, int depth)
 			tree->suf = fbnch_new(dat,
 					     fbnch_rpop(dat, &tree->pre, depth),
 					     depth);
-
 		goto end;
 	}
 
@@ -369,6 +368,7 @@ ftree_pop(Nit_fdat *dat, Nit_ftree *tree, int depth)
 	}
 
 end:
+
 	if (!ftree_set_ano(dat, tree))
 		return NULL;
 
@@ -395,8 +395,6 @@ ftree_rpop(Nit_fdat *dat, Nit_ftree *tree, int depth)
 		goto end;
 
 	if (!LIST_NEXT(tree)) {
-		printf("\nwot?!\n");
-
 		if (precnt(tree) == 1)
 			goto end;
 
@@ -409,7 +407,7 @@ ftree_rpop(Nit_fdat *dat, Nit_ftree *tree, int depth)
 	if (!(next = mut_next(dat, tree, depth)))
 		return NULL;
 
-	tree->pre = ftree_rpop(dat, next, depth + 1);
+	tree->suf = ftree_rpop(dat, next, depth + 1);
 
 	if (ftree_type(next) == EMPTY) {
 		ftree_reduce(dat, next, depth + 1);

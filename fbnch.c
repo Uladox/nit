@@ -208,15 +208,14 @@ fbnch_pop(Nit_fdat *dat, Nit_fbnch **bnch, int depth)
 	void *val = fbnch_first(old);
 
 	if (old->cnt == 1) {
-		*bnch = NULL;
-
-		if (val && depth > 0) {
-			printf("\ndepth: %i\n", depth);
+		if (depth > 0)
 			++((Nit_fbnch *) val)->refs;
-		}
+
+		*bnch = NULL;
 	} else if (!(*bnch = fbnch_new_arr(dat, old->elems + 1,
-					 old->cnt - 1, depth)))
+					   old->cnt - 1, depth))) {
 		return NULL;
+	}
 
 	fbnch_reduce(dat, old, depth);
 
