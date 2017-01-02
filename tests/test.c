@@ -11,7 +11,6 @@
 #include "../list.h"
 #include "../hset.h"
 #include "../hmap.h"
-#include "../bimap.h"
 #include "../gap-buf.h"
 #include "../gc.h"
 
@@ -46,57 +45,6 @@ test_hmap(const MunitParameter params[], void* data)
 	munit_assert_null(hmap_get(map, &i, sizeof(i)));
 
         hmap_free(map, hmap_free_contents);
-	return MUNIT_OK;
-}
-
-static void
-bimap_free_contents(void *key, void *storage)
-{
-	Nit_entry_list *list = storage;
-	Nit_entry_list *prev = NULL;
-
-	nit_foreach (list) {
-		free(prev);
-		prev = list;
-	}
-
-	free(prev);
-}
-
-static MunitResult
-test_bimap(const MunitParameter params[], void* data)
-{
-	Nit_bimap *map = bimap_new(2, 0);
-	char str1[] = "cats";
-	int int1 = 5;
-	char str2[] = "dogs";
-	int int2 = 32;
-	int int3 = 42;
-	char str3[] = "not used";
-	Nit_entry_list *entry;
-
-	(void) params;
-	(void) data;
-
-	bimap_add(map, str1, sizeof(str1), &int1, sizeof(int1));
-
-	bimap_add(map, str2, sizeof(str2), &int2, sizeof(int2));
-	bimap_add(map, str2, sizeof(str2), &int3, sizeof(int3));
-
-	entry = bimap_lget(map, str1, sizeof(str1));
-	munit_assert_int(int1, ==, *(int *) entry->entry->dat);
-
-	entry = bimap_rget(map, &int2, sizeof(int2));
-	munit_assert_string_equal(entry->entry->dat, str2);
-
-	entry = bimap_lget(map, str2, sizeof(str2));
-	munit_assert_int(int3, ==, *(int *) entry->entry->dat);
-	entry = NIT_LIST_NEXT(entry);
-	munit_assert_int(int2, ==, *(int *) entry->entry->dat);
-
-	munit_assert_null(bimap_lget(map, str3, sizeof(str3)));
-
-        bimap_free(map, bimap_free_contents, bimap_free_contents);
 	return MUNIT_OK;
 }
 
@@ -197,8 +145,6 @@ test_gc(const MunitParameter params[], void* data)
 
 static MunitTest test_suite_tests[] = {
 	{ (char *) "/hmap", test_hmap,
-	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
-	{ (char *) "/bimap", test_bimap,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ (char *) "/gap-buf", test_gap_buf,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },

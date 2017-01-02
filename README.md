@@ -1,2 +1,2 @@
 # nitlib
-Data structures for nitwit and cool utilities.
+A dumping ground for data structures for my endless projects and 🆒 utilties 😎.
