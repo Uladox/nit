@@ -23,22 +23,36 @@ hmap_free_contents(void *key, void *storage)
 static MunitResult
 test_hmap(const MunitParameter params[], void* data)
 {
+	Nit_hmap_iter iter;
 	Nit_hmap *map = hmap_new(2);
 	int i = 0;
 
 	(void) params;
 	(void) data;
 
-	for (; i <= 500; ++i) {
+	for (; i < 500; ++i) {
 		int *storage = malloc(sizeof(i));
 
 		*storage = i;
 	        hmap_add(map, &i, sizeof(i), storage);
 	}
 
-	for (i = 0; i <= 500; ++i)
+	for (i = 0; i < 500; ++i)
 		munit_assert_int(i, ==,
 				 *(int *) hmap_get(map, &i, sizeof(i)));
+
+	hmap_iter_init(&iter, map);
+	i = 0;
+
+        do {
+		int *key = hmap_iter_key(&iter);
+		int *val = hmap_iter_val(&iter);
+
+		++i;
+		munit_assert_int(*key, ==, *val);
+	} while (hmap_iter_next(&iter));
+
+	munit_assert_int(i, ==, 500);
 
 	i = 42;
         free(hmap_remove(map, &i, sizeof(i)));

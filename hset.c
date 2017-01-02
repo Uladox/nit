@@ -347,3 +347,50 @@ hset_rehash(Nit_hset *set)
 
 	return 0;
 }
+
+static void
+iter_next_nonempty_bin(Nit_hset_iter *iter)
+{
+	for (; iter->bin_num < iter->bin_last - 1; ++iter->bin_num)
+		if (iter->bins[iter->bin_num].first)
+			break;
+
+	iter->entry = iter->bins[iter->bin_num].first;
+}
+
+void
+nit_hset_iter_init(Nit_hset_iter *iter, Nit_hset *set)
+{
+	iter->bin_num = 0;
+	iter->bins = set->bins;
+	iter->bin_last = set->bin_num;
+	iter_next_nonempty_bin(iter);
+}
+
+void *
+nit_hset_iter_dat(Nit_hset_iter *iter)
+{
+	if (!iter->entry)
+		return NULL;
+
+	return iter->entry->dat;
+}
+
+int
+nit_hset_iter_next(Nit_hset_iter *iter)
+{
+	if (!iter->entry)
+		return 0;
+
+	if (!LIST_INC(iter->entry)) {
+		if (++iter->bin_num >= iter->bin_last)
+			return 0;
+
+		iter_next_nonempty_bin(iter);
+
+		if (!iter->entry)
+			return 0;
+	}
+
+	return 1;
+}

@@ -21,6 +21,7 @@
  */
 
 typedef Nit_hset Nit_hmap;
+typedef Nit_hset_iter Nit_hmap_iter;
 typedef void(*Nit_map_free)(void *key, void *storage);
 
 static inline void **
@@ -76,6 +77,35 @@ nit_hmap_rehash(Nit_hmap *map)
 	return nit_hset_rehash(map);
 }
 
+static inline void
+nit_hmap_iter_init(Nit_hmap_iter *iter, Nit_hmap *map)
+{
+	nit_hset_iter_init(iter, map);
+}
+
+static inline void *
+nit_hmap_iter_key(Nit_hmap_iter *iter)
+{
+	return nit_hset_iter_dat(iter);
+}
+
+static inline void *
+nit_hmap_iter_val(Nit_hmap_iter *iter)
+{
+	void *dat = nit_hset_iter_dat(iter);
+
+	if (!dat)
+		return NULL;
+
+	return nit_hmap_storage(dat, iter->entry->key_size);
+}
+
+int
+nit_hmap_iter_next(Nit_hmap_iter *iter)
+{
+	return nit_hset_iter_next(iter);
+}
+
 #if defined NIT_SHORT_NAMES || defined NIT_HMAP_SHORT_NAMES
 # define hmap_storage_ref(...) nit_hmap_storage_ref(__VA_ARGS__)
 # define hmap_storage(...)     nit_hmap_storage(__VA_ARGS__)
@@ -88,4 +118,8 @@ nit_hmap_rehash(Nit_hmap *map)
 # define hmap_remove(...)      nit_hmap_remove(__VA_ARGS__)
 # define hmap_get(...)         nit_hmap_get(__VA_ARGS__)
 # define hmap_rehash(...)      nit_hmap_rehash(__VA_ARGS__)
+# define hmap_iter_init(...)   nit_hmap_iter_init(__VA_ARGS__)
+# define hmap_iter_key(...)    nit_hmap_iter_key(__VA_ARGS__)
+# define hmap_iter_val(...)    nit_hmap_iter_val(__VA_ARGS__)
+# define hmap_iter_next(...)   nit_hmap_iter_next(__VA_ARGS__)
 #endif

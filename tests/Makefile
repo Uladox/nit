@@ -1,7 +1,7 @@
 test: test.o ../libnit.a
 	@gcc -g -o test test.o munit/munit.c ../libnit.a
 
-test.o:
+test.o: test.c
 	@gcc -g -c test.c
 
 ../libnit.a:

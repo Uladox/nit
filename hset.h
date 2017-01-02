@@ -45,6 +45,15 @@ struct nit_hset {
 	Nit_hbin *bins;
 };
 
+typedef struct nit_hset_iter Nit_hset_iter;
+
+struct nit_hset_iter {
+	int bin_num;
+	int bin_last;
+	Nit_hbin *bins;
+	Nit_hentry *entry;
+};
+
 Nit_hentry *
 nit_hentry_new(void *dat, uint32_t key_size);
 
@@ -81,6 +90,16 @@ nit_hset_subset(const Nit_hset *super, const Nit_hset *sub);
 int
 nit_hset_rehash(Nit_hset *set);
 
+void
+nit_hset_iter_init(Nit_hset_iter *iter, Nit_hset *set);
+
+void *
+nit_hset_iter_dat(Nit_hset_iter *iter);
+
+int
+nit_hset_iter_next(Nit_hset_iter *iter);
+
+
 #if defined NIT_SHORT_NAMES || defined NIT_HSET_SHORT_NAMES
 # define hentry_new(...)      nit_hentry_new(__VA_ARGS__)
 # define hset_new(...)        nit_hset_new(__VA_ARGS__)
@@ -94,4 +113,7 @@ nit_hset_rehash(Nit_hset *set);
 # define hset_contains(...)   nit_hset_contains(__VA_ARGS__)
 # define hset_subset(...)     nit_hset_subset(__VA_ARGS__)
 # define hset_rehash(...)     nit_hset_rehash(__VA_ARGS__)
+# define hset_iter_init(...)  nit_hset_iter_init(__VA_ARGS__)
+# define hset_iter_dat(...)   nit_hset_iter_dat(__VA_ARGS__)
+# define hset_iter_next(...)  nit_hset_iter_next(__VA_ARGS__)
 #endif
