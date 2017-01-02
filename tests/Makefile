@@ -1,10 +1,11 @@
 test: test.o ../libnit.a
-	gcc -g -o test test.o munit/munit.c ../libnit.a
+	@gcc -g -o test test.o munit/munit.c ../libnit.a
 
-test.o: test.c ../ftree.h
-	gcc -g -c test.c
+test.o:
+	@gcc -g -c test.c
 
 ../libnit.a:
-	(cd .. && make)
+	@(cd .. && make)
+
 clean:
-	rm -f test test.o
+	@rm -f test test.o

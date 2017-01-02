@@ -14,8 +14,6 @@
 #include "../bimap.h"
 #include "../gap-buf.h"
 #include "../gc.h"
-#include "../fbnch.h"
-#include "../ftree.h"
 
 static void
 hmap_free_contents(void *key, void *storage)
@@ -197,76 +195,6 @@ test_gc(const MunitParameter params[], void* data)
 	return MUNIT_OK;
 }
 
-int
-nat_ral(enum nit_anop op, union nit_ano *subj, void *add, void *extra)
-{
-	switch (op) {
-	case FT_RESET:
-		subj->ptr = NULL;
-		return 1;
-	case FT_DEC:
-		return 1;
-	case FT_MES_DAT:
-		++subj->num;
-	        return 1;
-	case FT_MES_ANO:
-		subj->num += ((union nit_ano *) add)->num;
-		return 1;
-	case FT_COPY:
-	        return 1;
-	}
-
-	return 0;
-}
-
-
-static MunitResult
-test_basic_ftree(const MunitParameter params[], void* data)
-{
-	Nit_fdat dat;
-	Nit_fmem *mem = fmem_new(8);
-	Nit_ftree *tree;
-	char *str1 = "hello";
-	char *str2 = " ";
-	char *str3 = "world!";
-	int i;
-
-        fdat_set(&dat, mem, NULL, nat_ral, 8);
-	tree = ftree_new(&dat);
-
-	/* munit_assert_null(ftree_first(tree)); */
-
-	/* ftree_append(&dat, tree, str2, 0); */
-	/* munit_assert_string_equal(str2, ftree_first(tree)); */
-	/* ftree_append(&dat, tree, str3, 0); */
-	/* munit_assert_string_equal(str3, ftree_last(tree)); */
-	/* ftree_prepend(&dat, tree, str1, 0); */
-	/* munit_assert_string_equal(str1, ftree_first(tree)); */
-
-	/* munit_assert_string_equal(str1, ftree_pop(&dat, tree, 0)); */
-	/* munit_assert_string_equal(str2, ftree_pop(&dat, tree, 0)); */
-	/* munit_assert_string_equal(str3, ftree_pop(&dat, tree, 0)); */
-
-	for (i = 0; i < 300; ++i) {
-		ftree_prepend(&dat, tree, str1, 0);
-		ftree_append(&dat, tree, str2, 0);
-	}
-
-	for (i = 0; i < 300; ++i) {
-		/* ftree_pop(&dat, tree, 0); */
-		munit_assert_string_equal(str1, ftree_pop(&dat, tree, 0));
-		munit_assert_string_equal(str2, ftree_rpop(&dat, tree, 0));
-	}
-
-	/* while (--i) { */
-	/* 	/\* printf("%i\n", i); *\/ */
-	/* 	munit_assert_string_equal(str1, ftree_pop(&dat, tree, 0)); */
-	/* 	munit_assert_string_equal(str2, ftree_rpop(&dat, tree, 0)); */
-	/* } */
-
-	return MUNIT_OK;
-}
-
 static MunitTest test_suite_tests[] = {
 	{ (char *) "/hmap", test_hmap,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
@@ -275,8 +203,6 @@ static MunitTest test_suite_tests[] = {
 	{ (char *) "/gap-buf", test_gap_buf,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ (char *) "/gc", test_gc,
-	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
-	{ (char *) "/ftree_basic", test_basic_ftree,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
 
@@ -297,13 +223,6 @@ main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 	/* test_hmap(NULL, NULL); */
 	/* test_gap_buf(NULL, NULL); */
 	/* test_gc(NULL, NULL); */
-	/* Nit_ftree f; */
-	/* Nit_fbnch b; */
-	/* printf("%zu, %zu, %zu\n", sizeof(Nit_ftree), sizeof(f.pre), */
-	/*        sizeof(f) - (sizeof(f.pre) + sizeof(f.suf))); */
-	/* printf("%zu, %zu, %zu\n", sizeof(b), sizeof(b.elems), */
-	/*        sizeof(b.refs)); */
-	/* test_ftree(NULL, NULL); */
 
 	return munit_suite_main(&test_suite, NULL, argc, argv);
 }
