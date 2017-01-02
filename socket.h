@@ -31,12 +31,8 @@ typedef struct {
 	struct sockaddr_un socket;
 	int sd;
 
-	fd_set set;
-	struct timeval timeout;
-
 	pthread_mutex_t end_mutex;
 	int end_bool;
-	unsigned int len;
 } Nit_joint;
 
 enum nit_join_status {

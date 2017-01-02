@@ -12,7 +12,7 @@
  *
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
- */
+*/
 
 #include <errno.h>
 #include <pthread.h>
@@ -34,7 +34,7 @@
 Nit_joiner *
 joiner_new(const char *path)
 {
-	int len;
+	socklen_t len;
 	Nit_joiner *jnr = palloc(jnr);
 
 	pcheck(jnr, NULL);
@@ -72,6 +72,7 @@ joiner_free(Nit_joiner *jnr)
 Nit_joint *
 joint_connect(const char *path)
 {
+	socklen_t len;
 	Nit_joint *jnt = palloc(jnt);
 
 	pcheck(jnt, NULL);
@@ -87,12 +88,11 @@ joint_connect(const char *path)
 	memset(&jnt->socket, 0, sizeof(jnt->socket));
 	jnt->socket.sun_family = AF_UNIX;
 	strcpy(jnt->socket.sun_path + 1, path);
-	jnt->len = strlen(path) + sizeof(jnt->socket.sun_family);
+        len = strlen(path) + sizeof(jnt->socket.sun_family);
 
 	pthread_mutex_init(&jnt->end_mutex, NULL);
 
-	if (connect(jnt->sd, (struct sockaddr *) &jnt->socket,
-		    jnt->len) < 0) {
+	if (connect(jnt->sd, (struct sockaddr *) &jnt->socket, len) < 0) {
 		perror("connect");
 		free(jnt);
 
@@ -108,6 +108,7 @@ Nit_joint *
 joiner_accept(Nit_joiner *jnr)
 {
 	Nit_joint *jnt = palloc(jnt);
+	socklen_t addrlen = sizeof(struct sockaddr);
 
 	pcheck(jnt, NULL);
 
@@ -118,10 +119,7 @@ joiner_accept(Nit_joiner *jnr)
 		return NULL;
 	}
 
-	jnt->len = sizeof(struct sockaddr);
-	jnt->sd = accept(jnr->sd,
-			(struct sockaddr *) &jnt->socket,
-			&jnt->len);
+	jnt->sd = accept(jnr->sd, (struct sockaddr *) &jnt->socket, &addrlen);
 
 	if (jnt->sd < 0) {
 		perror("accept");
@@ -176,21 +174,21 @@ joint_kill(Nit_joint *jnt)
 	pthread_mutex_unlock(&jnt->end_mutex);
 }
 
-static void
-set_zero_timeout(Nit_joint *jnt)
-{
-	FD_ZERO(&jnt->set);
-	FD_SET(jnt->sd, &jnt->set);
-	jnt->timeout.tv_sec = 0;
-	jnt->timeout.tv_usec = 0;
-}
-
 static int
-data_to_read(Nit_joint *jnt)
+is_data_to_read(Nit_joint *jnt)
 {
-	set_zero_timeout(jnt);
+	fd_set set;
+	struct timeval timeout = {
+		.tv_sec = 0,
+		.tv_usec = 0
+	};
 
-	return select(FD_SETSIZE, &jnt->set, NULL, NULL, &jnt->timeout);
+
+	FD_ZERO(&set);
+	FD_SET(jnt->sd, &set);
+	/* set_zero_timeout(jnt); */
+
+	return select(FD_SETSIZE, &set, NULL, NULL, &timeout);
 }
 
 static int
@@ -220,7 +218,7 @@ joint_read(Nit_joint *jnt, char **buf, int32_t *old_size,
 
 	pthread_mutex_lock(&jnt->end_mutex);
 
-	retval = data_to_read(jnt);
+	retval = is_data_to_read(jnt);
 
 	if (retval > 0) {
 		if (!recv(jnt->sd, &test, 1, MSG_PEEK | MSG_DONTWAIT)) {
