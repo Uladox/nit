@@ -100,7 +100,7 @@ nit_hmap_iter_val(Nit_hmap_iter *iter)
 	return nit_hmap_storage(dat, iter->entry->key_size);
 }
 
-int
+static inline int
 nit_hmap_iter_next(Nit_hmap_iter *iter)
 {
 	return nit_hset_iter_next(iter);

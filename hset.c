@@ -28,7 +28,7 @@
 #define BIN_MAX_DENSITY 5
 #define H_SEED 37
 
-static const int primes[] = {
+static const int bin_num[] = {
 	1, 3,
 	8 + 3, 16 + 3, 32 + 5, 64 + 3, 128 + 3, 256 + 27, 512 + 9,
 	1024 + 9, 2048 + 5, 4096 + 3, 8192 + 27, 16384 + 43, 32768 + 3,
@@ -37,6 +37,12 @@ static const int primes[] = {
 	67108864 + 15, 134217728 + 29, 268435456 + 3, 536870912 + 11,
 	1073741824 + 85, 0
 };
+
+int
+hset_bin_num(Nit_hset *set)
+{
+	return bin_num[set->bin_pos];
+}
 
 void
 rehash(Nit_hset *set);
@@ -118,34 +124,33 @@ hentry_new(void *dat, uint32_t key_size)
 	return entry;
 }
 
-Nit_hset *
-hset_new(unsigned int sequence)
+int
+nit_hset_init(Nit_hset *set, unsigned int sequence)
 {
 	int i = 0;
 	Nit_hbin *bin;
-	Nit_hset *set = palloc(set);
 
-	pcheck(set, NULL);
-	set->bin_num = primes[sequence];
-	set->bins = malloc(sizeof(*set->bins) * primes[sequence]);
+	set->bin_pos = sequence;
 	set->entry_num = 0;
-	set->primes_pointer = primes;
+
+	if (!(set->bins = malloc(sizeof(*set->bins) * bin_num[sequence])))
+		return 0;
+
 	bin = set->bins;
 
-
-	for (; i != primes[sequence]; ++i, ++bin)
+	for (; i != bin_num[sequence]; ++i, ++bin)
 		bin->first = NULL;
 
-	return set;
+	return 1;
 }
 
 void
-hset_free(Nit_hset *set, Nit_set_free dat_free)
+nit_hset_release(Nit_hset *set, Nit_set_free dat_free)
 {
 	Nit_hbin *bin = set->bins;
 	int i;
 
-	for (i = 0; i != set->bin_num; ++i, ++bin) {
+	for (i = 0; i != bin_num[set->bin_pos]; ++i, ++bin) {
 		Nit_hentry *entry = bin->first;
 		Nit_hentry *tmp;
 
@@ -156,7 +161,34 @@ hset_free(Nit_hset *set, Nit_set_free dat_free)
 	}
 
 	free(set->bins);
+}
+
+Nit_hset *
+hset_new(unsigned int sequence)
+{
+	Nit_hset *set = palloc(set);
+
+	pcheck(set, NULL);
+
+	if (!nit_hset_init(set, sequence)) {
+		free(set);
+		return NULL;
+	}
+
+	return set;
+}
+
+void
+hset_free(Nit_hset *set, Nit_set_free dat_free)
+{
+	nit_hset_release(set, dat_free);
 	free(set);
+}
+
+static int
+row_num(const void *key, uint32_t key_size, int num)
+{
+	return murmur3_32(key, key_size, H_SEED) % num;
 }
 
 Nit_hentry **
@@ -165,7 +197,7 @@ hset_entry(Nit_hset *set, void *key, uint32_t key_size)
 	Nit_hentry *entry;
 	unsigned int row;
 
-	row = murmur3_32(key, key_size, H_SEED) % set->bin_num;
+	row = row_num(key, key_size, bin_num[set->bin_pos]);
 	entry = set->bins[row].first;
 
 	if (!entry || compare(entry, key, key_size))
@@ -184,7 +216,7 @@ hset_entry(Nit_hset *set, void *key, uint32_t key_size)
 int
 hset_add_reduce(Nit_hset *set)
 {
-	if (++set->entry_num / set->bin_num >= BIN_MAX_DENSITY)
+	if (++set->entry_num / bin_num[set->bin_pos] >= BIN_MAX_DENSITY)
 		return hset_rehash(set);
 
 	return 0;
@@ -223,7 +255,7 @@ nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size)
 void *
 hset_remove(Nit_hset *set, const void *dat, uint32_t key_size)
 {
-	unsigned int row = murmur3_32(dat, key_size, H_SEED) % set->bin_num;
+	unsigned int row = row_num(dat, key_size, bin_num[set->bin_pos]);
 	Nit_hentry *entry = set->bins[row].first;
 	Nit_hentry *prev;
 	void *ret;
@@ -259,7 +291,7 @@ hset_remove(Nit_hset *set, const void *dat, uint32_t key_size)
 void *
 hset_get(const Nit_hset *set, const void *dat, uint32_t key_size)
 {
-	unsigned int row = murmur3_32(dat, key_size, H_SEED) % set->bin_num;
+	unsigned int row = row_num(dat, key_size, bin_num[set->bin_pos]);
 	const Nit_hentry *entry = set->bins[row].first;
 
         foreach (entry)
@@ -284,7 +316,7 @@ hset_subset(const Nit_hset *super, const Nit_hset *sub)
 	if (sub->entry_num > super->entry_num)
 		return 0;
 
-	for (i = 0; i != sub->bin_num; ++i, ++bin) {
+	for (i = 0; i != bin_num[sub->bin_pos]; ++i, ++bin) {
 		Nit_hentry *entry = bin->first;
 
 	        foreach (entry)
@@ -319,7 +351,7 @@ int
 hset_rehash(Nit_hset *set)
 {
 	int i;
-	int new_bin_num = set->primes_pointer[1];
+	int new_bin_num = bin_num[set->bin_pos + 1];
 	Nit_hbin *bin = set->bins;
 	Nit_hbin *new_bins = palloc_a(new_bins, new_bin_num);
 
@@ -328,13 +360,13 @@ hset_rehash(Nit_hset *set)
 	for (i = 0; i != new_bin_num; ++i)
 		new_bins[i].first = NULL;
 
-	for (i = 0; i != set->bin_num; ++i, ++bin) {
+	for (i = 0; i != bin_num[set->bin_pos]; ++i, ++bin) {
 		Nit_hentry *entry = bin->first;
 		Nit_hentry *tmp;
 
 		delayed_foreach (tmp, entry) {
-			uint32_t row = murmur3_32(tmp->dat, tmp->key_size,
-						  H_SEED) % new_bin_num;
+			uint32_t row = row_num(tmp->dat, tmp->key_size,
+					       new_bin_num);
 
 			rehash_add(new_bins + row, tmp);
 		}
@@ -342,8 +374,7 @@ hset_rehash(Nit_hset *set)
 
 	free(set->bins);
 	set->bins = new_bins;
-	++set->primes_pointer;
-	set->bin_num = new_bin_num;
+	++set->bin_pos;
 
 	return 0;
 }
@@ -362,8 +393,8 @@ void
 nit_hset_iter_init(Nit_hset_iter *iter, Nit_hset *set)
 {
 	iter->bin_num = 0;
+	iter->bin_last = bin_num[set->bin_pos];
 	iter->bins = set->bins;
-	iter->bin_last = set->bin_num;
 	iter_next_nonempty_bin(iter);
 }
 

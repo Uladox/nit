@@ -39,9 +39,8 @@ typedef void(*Nit_set_free)(void *dat);
 typedef struct nit_hset Nit_hset;
 
 struct nit_hset {
-        int bin_num;
 	int entry_num;
-	const int *primes_pointer;
+	int bin_pos;
 	Nit_hbin *bins;
 };
 
@@ -54,8 +53,17 @@ struct nit_hset_iter {
 	Nit_hentry *entry;
 };
 
+int
+nit_hset_bin_num(Nit_hset *set);
+
 Nit_hentry *
 nit_hentry_new(void *dat, uint32_t key_size);
+
+int
+nit_hset_init(Nit_hset *set, unsigned int sequence);
+
+void
+nit_hset_release(Nit_hset *set, Nit_set_free dat_free);
 
 Nit_hset *
 nit_hset_new(unsigned int sequence);
@@ -101,7 +109,10 @@ nit_hset_iter_next(Nit_hset_iter *iter);
 
 
 #if defined NIT_SHORT_NAMES || defined NIT_HSET_SHORT_NAMES
+# define hset_bin_num(...)    nit_hset_bin_num(__VA_ARGS__)
 # define hentry_new(...)      nit_hentry_new(__VA_ARGS__)
+# define hset_init(...)       nit_hset_init(__VA_ARGS__)
+# define hset_release(...)    nit_hset_release(__VA_ARGS__)
 # define hset_new(...)        nit_hset_new(__VA_ARGS__)
 # define hset_free(...)       nit_hset_free(__VA_ARGS__)
 # define hset_entry(...)      nit_hset_entry(__VA_ARGS__)

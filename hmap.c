@@ -30,9 +30,10 @@ void
 nit_hmap_free(Nit_hmap *map, Nit_map_free dat_free)
 {
 	Nit_hbin *bin = map->bins;
+	int bin_num = hset_bin_num(map);
 	int i;
 
-	for (i = 0; i != map->bin_num; ++i, ++bin) {
+	for (i = 0; i != bin_num; ++i, ++bin) {
 		Nit_hentry *entry = bin->first;
 		Nit_hentry *tmp;
 
