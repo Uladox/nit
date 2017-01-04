@@ -1,7 +1,7 @@
 /* This file should not be required for any other headers */
 /* Include these
- * #include <stdlib.h>
- * #include "macros.h"
+   #include <stdlib.h>
+   #include "macros.h"
  */
 
 #define palloc(ptr)          (malloc(sizeof(*(ptr))))

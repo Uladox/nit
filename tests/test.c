@@ -13,6 +13,7 @@
 #include "../hmap.h"
 #include "../gap-buf.h"
 #include "../gc.h"
+#include "../radix.h"
 
 static void
 hmap_free_contents(void *key, void *storage)
@@ -155,6 +156,32 @@ test_gc(const MunitParameter params[], void* data)
 	munit_assert_int(gc_free(gc), ==, 0);
 
 	return MUNIT_OK;
+}
+
+static MunitResult
+test_radix(const MunitParameter params[], void* data)
+{
+	Nit_radix *radix = radix_new(NULL);
+
+	radix_insert(radix, "firs",     &(int){ 3 });
+	radix_insert(radix, "first",    &(int){ 1 });
+	radix_insert(radix, "second",   &(int){ 2 });
+	radix_insert(radix, "secs",     &(int){ 4 });
+	radix_insert(radix, "secoms",   &(int){ 5 });
+	radix_insert(radix, "a",        &(int){ 6 });
+	radix_insert(radix, "absolute", &(int){ 7 });
+	radix_insert(radix, "bottle",   &(int){ 8 });
+	radix_insert(radix, "b",        &(int){ 9 });
+
+	munit_assert_int(1, ==, *(int *) radix_lookup(radix, "first"));
+	munit_assert_int(2, ==, *(int *) radix_lookup(radix, "second"));
+	munit_assert_int(3, ==, *(int *) radix_lookup(radix, "secs"));
+	munit_assert_int(4, ==, *(int *) radix_lookup(radix, "secoms"));
+	munit_assert_int(5, ==, *(int *) radix_lookup(radix, "firs"));
+	munit_assert_int(6, ==, *(int *) radix_lookup(radix, "a"));
+	munit_assert_int(7, ==, *(int *) radix_lookup(radix, "absolute"));
+	munit_assert_int(8, ==, *(int *) radix_lookup(radix, "bottle"));
+	munit_assert_int(9, ==, *(int *) radix_lookup(radix, "b"));
 }
 
 static MunitTest test_suite_tests[] = {

@@ -1,6 +1,6 @@
 /* Include these
- * #include <stddef.h> or <stdio.h> or <stdlib.h>
- * #include "list.h"
+   #include <stddef.h> or <stdio.h> or <stdlib.h> something defining size_t
+   #include "list.h"
  */
 
 typedef struct {

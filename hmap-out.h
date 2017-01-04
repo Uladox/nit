@@ -15,10 +15,10 @@
  */
 
 /* Include these
- * #include <stdint.h>
- * #include <stdio.h>
- * #include "hset.h"
- * #include "hmap.h"
+   #include <stdint.h>
+   #include <stdio.h>
+   #include "hset.h"
+   #include "hmap.h"
  */
 
 typedef struct {

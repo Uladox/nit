@@ -15,9 +15,9 @@
  */
 
 /* Include these
- * #include <stdint.h>
- * #include "list.h"
- * #include "hset.h"
+   #include <stdint.h>
+   #include "list.h"
+   #include "hset.h"
  */
 
 typedef Nit_hset Nit_hmap;
@@ -34,6 +34,18 @@ static inline void *
 nit_hmap_storage(void *dat, uint32_t key_size)
 {
 	return *nit_hmap_storage_ref(dat, key_size);
+}
+
+static inline int
+nit_hmap_init(Nit_hmap *map, unsigned int sequence)
+{
+	return nit_hset_init(map, sequence);
+}
+
+static inline void
+nit_hmap_release(Nit_hmap *map, Nit_set_free dat_free)
+{
+	nit_hset_release(map, dat_free);
 }
 
 static inline Nit_hmap *
@@ -59,6 +71,17 @@ nit_hmap_add(Nit_hmap *hmap, void *key, uint32_t key_size, void *storage);
 
 void *
 nit_hmap_remove(Nit_hmap *map, void *key, uint32_t key_size);
+
+static inline void *
+nit_hmap_get_ref(const Nit_hmap *map, const void *key, uint32_t key_size)
+{
+	void *dat = nit_hset_get(map, key, key_size);
+
+	if (!dat)
+		return NULL;
+
+	return (void *) nit_hmap_storage_ref(dat, key_size);
+}
 
 static inline void *
 nit_hmap_get(const Nit_hmap *map, const void *key, uint32_t key_size)
@@ -109,6 +132,8 @@ nit_hmap_iter_next(Nit_hmap_iter *iter)
 #if defined NIT_SHORT_NAMES || defined NIT_HMAP_SHORT_NAMES
 # define hmap_storage_ref(...) nit_hmap_storage_ref(__VA_ARGS__)
 # define hmap_storage(...)     nit_hmap_storage(__VA_ARGS__)
+# define hmap_init(...)        nit_hmap_init(__VA_ARGS__)
+# define hmap_release(...)     nit_hmap_release(__VA_ARGS__)
 # define hmap_new(...)         nit_hmap_new(__VA_ARGS__)
 # define hmap_free(...)        nit_hmap_free(__VA_ARGS__)
 # define hmap_dat_new(...)     nit_hmap_dat_new(__VA_ARGS__)
@@ -116,6 +141,7 @@ nit_hmap_iter_next(Nit_hmap_iter *iter)
 # define hmap_add_reduce(...)  nit_hmap_add_reduce(__VA_ARGS__)
 # define hmap_add(...)         nit_hmap_add(__VA_ARGS__)
 # define hmap_remove(...)      nit_hmap_remove(__VA_ARGS__)
+# define hmap_get_ref(...)     nit_hmap_get_ref(__VA_ARGS__)
 # define hmap_get(...)         nit_hmap_get(__VA_ARGS__)
 # define hmap_rehash(...)      nit_hmap_rehash(__VA_ARGS__)
 # define hmap_iter_init(...)   nit_hmap_iter_init(__VA_ARGS__)

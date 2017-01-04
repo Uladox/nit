@@ -15,8 +15,8 @@
  */
 
 /* Include these
- * #include <stdint.h>
- * #include "list.h"
+   #include <stdint.h>
+   #include "list.h"
  */
 
 enum nit_hset_error {
