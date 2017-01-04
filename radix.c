@@ -42,14 +42,16 @@ radix_add(Nit_radix *radix, char c, Nit_redge *edge)
 }
 
 void *
-radix_lookup(Nit_radix *radix, char *str)
+radix_lookup(Nit_radix *radix, const void *key, size_t len)
 {
 	Nit_redge *e;
+	const char *str = key;
 
-	for (; *str; str += e->len, radix = e->radix) {
+	for (; len > 0; str += e->len, len -= e->len, radix = e->radix) {
 		e = radix_get(radix, *str++);
+		--len;
 
-		if (!e || strncmp(str, e->str, e->len) != 0)
+		if (!e || len < e->len || memcmp(str, e->str, e->len) != 0)
 			return NULL;
 	}
 
@@ -74,70 +76,89 @@ radix_new(void *dat)
 }
 
 Nit_redge *
-redge_new(Nit_radix *radix, char *pre, size_t len)
+redge_new(Nit_radix *radix, const void *pre, size_t len)
 {
 	Nit_redge *e = malloc(sizeof(*e) + len);
 
 	pcheck(e, NULL);
 	e->radix = radix;
 	e->len = len;
-	strncpy(e->str, pre, len);
+	memcpy(e->str, pre, len);
 
 	return e;
 }
 
 int
-redge_split(Nit_redge **old_ref, char *str, void *dat)
+redge_split(Nit_redge **old_ref, const void *key, size_t len, void *dat)
 {
+	const char *str = key;
 	Nit_radix *split;
 	Nit_redge *common;
+	Nit_redge *tmp;
 	Nit_redge *e = *old_ref;
 	char *e_str = e->str;
 	size_t i = 0;
 
-	for (; i < e->len; ++i, ++e_str, ++str)
-		if (!*str || *e_str != *str)
+	for (; len && i < e->len; ++i, ++e_str, ++str, --len)
+		if (*e_str != *str)
 			break;
 
 	if (i == e->len)
 		return 0;
 
-	if (!*str) {
+	if (!len) {
 		pcheck(split = radix_new(dat), -1);
 	} else {
-		Nit_redge *tmp;
 		char c = *str++;
+		Nit_radix *end = radix_new(dat);
 
+		--len;
+		pcheck(end, -1);
 		pcheck(split = radix_new(NULL), -1);
-		tmp = redge_new(radix_new(dat), str, strlen(str));
+		tmp = redge_new(end, str, len);
 		pcheck(tmp, -1);
-		radix_add(split, c, tmp);
+
+		if (radix_add(split, c, tmp) <= 0)
+			return -1;
 	}
 
-        common = redge_new(split, e->str, i);
-	radix_add(split, *e_str, redge_new(e->radix, e_str + 1, e->len - i - 1));
+        pcheck(common = redge_new(split, e->str, i), -1);
+	pcheck(tmp = redge_new(e->radix, e_str + 1, e->len - i - 1), -1);
+
+	if (radix_add(split, *e_str, tmp) <= 0)
+		return -1;
+
 	free(*old_ref);
 	*old_ref = common;
 	return 1;
 }
 
 int
-radix_insert(Nit_radix *radix, char *str, void *dat)
+radix_insert(Nit_radix *radix, const void *key, size_t len, void *dat)
 {
 	Nit_redge *e;
 	Nit_redge **er;
+	const char *str = key;
 	Nit_radix *new_radix = radix_new(dat);
 
-	for (; *str; e = *er, str += e->len, radix = e->radix) {
+	for (; *str;
+	     e = *er, str += e->len, len -= e->len, radix = e->radix) {
 		if (!(er = radix_get_ref(radix, *str))) {
 			char c = *str++;
 
-			e = redge_new(new_radix, str, strlen(str));
+			--len;
+			pcheck(e = redge_new(new_radix, str, len), 0);
 			return radix_add(radix, c, e);
 		}
 
-		if (redge_split(er, ++str, dat))
+		switch (redge_split(er, ++str, --len, dat)) {
+		case -1:
+			return 0;
+		case 0:
+			break;
+		case 1:
 			return 1;
+		}
 	}
 
 	return 1;

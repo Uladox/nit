@@ -29,7 +29,7 @@ int
 nit_radix_add(Nit_radix *radix, char c, Nit_redge *edge);
 
 void *
-nit_radix_lookup(Nit_radix *radix, char *str);
+nit_radix_lookup(Nit_radix *radix, const void *str, size_t len);
 
 void
 nit_radix_init(Nit_radix *radix, void *dat);
@@ -38,13 +38,15 @@ Nit_radix *
 nit_radix_new(void *dat);
 
 Nit_redge *
-nit_redge_new(Nit_radix *radix, char *pre, size_t len);
+nit_redge_new(Nit_radix *radix, const void *pre, size_t len);
 
 int
-nit_redge_split(Nit_redge **old_ref, char *str, void *dat);
+nit_redge_split(Nit_redge **old_ref, const void *key,
+		size_t key_size, void *dat);
 
 int
-nit_radix_insert(Nit_radix *radix, char *str, void *dat);
+nit_radix_insert(Nit_radix *radix, const void *key,
+		 size_t key_size, void *dat);
 
 #if defined NIT_SHORT_NAMES || defined NIT_RADIX_SHORT_NAMES
 # define radix_get_ref(...) nit_radix_get_ref(__VA_ARGS__)

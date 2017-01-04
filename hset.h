@@ -19,12 +19,6 @@
    #include "list.h"
  */
 
-enum nit_hset_error {
-	NIT_HSET_OK = 0,
-	NIT_HSET_OCCUPIED,
-	NIT_HSET_NO_MEM
-};
-
 typedef struct {
 	Nit_list next;
 	void *dat;
@@ -77,10 +71,10 @@ nit_hset_entry(Nit_hset *set, void *dat, uint32_t key_size);
 int
 nit_hset_add_reduce(Nit_hset *set);
 
-enum nit_hset_error
+int
 nit_hset_add(Nit_hset *set, void *dat, uint32_t key_size);
 
-enum nit_hset_error
+int
 nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size);
 
 void *

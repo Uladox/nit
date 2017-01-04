@@ -35,7 +35,7 @@ test_hmap(const MunitParameter params[], void* data)
 		int *storage = malloc(sizeof(i));
 
 		*storage = i;
-	        hmap_add(map, &i, sizeof(i), storage);
+		hmap_add(map, &i, sizeof(i), storage);
 	}
 
 	for (i = 0; i < 500; ++i)
@@ -45,7 +45,7 @@ test_hmap(const MunitParameter params[], void* data)
 	hmap_iter_init(&iter, map);
 	i = 0;
 
-        do {
+	do {
 		int *key = hmap_iter_key(&iter);
 		int *val = hmap_iter_val(&iter);
 
@@ -56,10 +56,10 @@ test_hmap(const MunitParameter params[], void* data)
 	munit_assert_int(i, ==, 500);
 
 	i = 42;
-        free(hmap_remove(map, &i, sizeof(i)));
+	free(hmap_remove(map, &i, sizeof(i)));
 	munit_assert_null(hmap_get(map, &i, sizeof(i)));
 
-        hmap_free(map, hmap_free_contents);
+	hmap_free(map, hmap_free_contents);
 	return MUNIT_OK;
 }
 
@@ -105,7 +105,7 @@ test_gap_buf(const MunitParameter params[], void* data)
 	/* Try adding strings together */
 	munit_assert_false(gap_write(&gap, str1, sizeof(str1) - 1));
 	munit_assert_false(gap_write(&gap, str3, sizeof(str3) - 1));
-        gap_read_str(&gap, str6);
+	gap_read_str(&gap, str6);
 	munit_assert_string_equal(str6, str5);
 
 	/* Check using another way to get string. */
@@ -113,7 +113,7 @@ test_gap_buf(const MunitParameter params[], void* data)
 	munit_assert_string_equal(str7, str5);
 
 	/* Tries cloning */
-        munit_assert_false(gap_clone(&clone, &gap));
+	munit_assert_false(gap_clone(&clone, &gap));
 	gap_read_str(&clone, clone_str);
 	munit_assert_string_equal(clone_str, str5);
 
@@ -158,30 +158,48 @@ test_gc(const MunitParameter params[], void* data)
 	return MUNIT_OK;
 }
 
+#define r_insert_int(radix, str, val)		\
+	radix_insert(radix, str, sizeof(str), &(int){ val })
+
+#define r_assert_int_lookup(radix, str, val)				\
+	munit_assert_int(val, ==,					\
+			 *(int *) radix_lookup(radix, str, sizeof(str)))
+
 static MunitResult
 test_radix(const MunitParameter params[], void* data)
 {
 	Nit_radix *radix = radix_new(NULL);
 
-	radix_insert(radix, "firs",     &(int){ 3 });
-	radix_insert(radix, "first",    &(int){ 1 });
-	radix_insert(radix, "second",   &(int){ 2 });
-	radix_insert(radix, "secs",     &(int){ 4 });
-	radix_insert(radix, "secoms",   &(int){ 5 });
-	radix_insert(radix, "a",        &(int){ 6 });
-	radix_insert(radix, "absolute", &(int){ 7 });
-	radix_insert(radix, "bottle",   &(int){ 8 });
-	radix_insert(radix, "b",        &(int){ 9 });
+	int a[8] = { 233, 2341, 0, 1234, 754, 0, 34, 87 };
+	int b[4] = { 233, 2341, 0, 1234 };
 
-	munit_assert_int(1, ==, *(int *) radix_lookup(radix, "first"));
-	munit_assert_int(2, ==, *(int *) radix_lookup(radix, "second"));
-	munit_assert_int(3, ==, *(int *) radix_lookup(radix, "secs"));
-	munit_assert_int(4, ==, *(int *) radix_lookup(radix, "secoms"));
-	munit_assert_int(5, ==, *(int *) radix_lookup(radix, "firs"));
-	munit_assert_int(6, ==, *(int *) radix_lookup(radix, "a"));
-	munit_assert_int(7, ==, *(int *) radix_lookup(radix, "absolute"));
-	munit_assert_int(8, ==, *(int *) radix_lookup(radix, "bottle"));
-	munit_assert_int(9, ==, *(int *) radix_lookup(radix, "b"));
+	r_insert_int(radix, "firs",     3);
+	r_insert_int(radix, "first",    1);
+	r_insert_int(radix, "second",   2);
+	r_insert_int(radix, "secs",     4);
+	r_insert_int(radix, "secoms",   5);
+	r_insert_int(radix, "a",        6);
+	r_insert_int(radix, "absolute", 7);
+	r_insert_int(radix, "bottle",   8);
+	r_insert_int(radix, "b",        9);
+
+	radix_insert(radix, a, sizeof(a), &(int){ 10 });
+	radix_insert(radix, b, sizeof(b), &(int){ 11 });
+
+	r_assert_int_lookup(radix, "first",    1);
+	r_assert_int_lookup(radix, "second",   2);
+	r_assert_int_lookup(radix, "secs",     4);
+	r_assert_int_lookup(radix, "secoms",   5);
+	r_assert_int_lookup(radix, "firs",     3);
+	r_assert_int_lookup(radix, "a",        6);
+	r_assert_int_lookup(radix, "absolute", 7);
+	r_assert_int_lookup(radix, "bottle",   8);
+	r_assert_int_lookup(radix, "b",        9);
+
+	munit_assert_int(10, ==, *(int *) radix_lookup(radix, a, sizeof(a)));
+	munit_assert_int(11, ==, *(int *) radix_lookup(radix, b, sizeof(b)));
+
+	return MUNIT_OK;
 }
 
 static MunitTest test_suite_tests[] = {
@@ -190,6 +208,8 @@ static MunitTest test_suite_tests[] = {
 	{ (char *) "/gap-buf", test_gap_buf,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ (char *) "/gc", test_gc,
+	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
+	{ (char *) "/radix", test_radix,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
 
@@ -210,6 +230,7 @@ main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 	/* test_hmap(NULL, NULL); */
 	/* test_gap_buf(NULL, NULL); */
 	/* test_gc(NULL, NULL); */
+	/* test_radix(NULL, NULL); */
 
 	return munit_suite_main(&test_suite, NULL, argc, argv);
 }

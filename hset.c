@@ -222,30 +222,29 @@ hset_add_reduce(Nit_hset *set)
 	return 0;
 }
 
-enum nit_hset_error
+int
 hset_add(Nit_hset *set, void *dat, uint32_t key_size)
 {
 	Nit_hentry **entry = hset_entry(set, dat, key_size);
 
 	if (*entry)
-		return NIT_HSET_OCCUPIED;
+		return 0;
 
-	pcheck((*entry = hentry_new(dat, key_size)),
-	       NIT_HSET_NO_MEM);
+	pcheck(*entry = hentry_new(dat, key_size), -1);
 
 	if (unlikely(hset_add_reduce(set)))
-		return NIT_HSET_NO_MEM;
+		return -1;
 
-	return NIT_HSET_OK;
+	return 1;
 }
 
-enum nit_hset_error
+int
 nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size)
 {
 	void *new_dat = malloc(key_size);
 
-	if (!dat)
-		return NIT_HSET_NO_MEM;
+	if (!new_dat)
+		return -1;
 
 	memcpy(new_dat, dat, key_size);
 
@@ -355,7 +354,7 @@ hset_rehash(Nit_hset *set)
 	Nit_hbin *bin = set->bins;
 	Nit_hbin *new_bins = palloc_a(new_bins, new_bin_num);
 
-	pcheck(new_bins, 1);
+	pcheck(new_bins, 0);
 
 	for (i = 0; i != new_bin_num; ++i)
 		new_bins[i].first = NULL;
@@ -376,7 +375,7 @@ hset_rehash(Nit_hset *set)
 	set->bins = new_bins;
 	++set->bin_pos;
 
-	return 0;
+	return 1;
 }
 
 static void

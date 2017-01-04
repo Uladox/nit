@@ -66,7 +66,7 @@ nit_hmap_add_reduce(Nit_hmap *map)
 	return nit_hset_add_reduce(map);
 }
 
-enum nit_hset_error
+int
 nit_hmap_add(Nit_hmap *hmap, void *key, uint32_t key_size, void *storage);
 
 void *
