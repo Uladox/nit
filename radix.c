@@ -163,3 +163,64 @@ radix_insert(Nit_radix *radix, const void *key, size_t len, void *dat)
 
 	return 1;
 }
+
+void
+radix_iter_init(Nit_radix_iter *iter, Nit_radix *radix)
+{
+	iter->type = NIT_T_RADIX;
+	iter->pos = 0;
+	iter->root = root;
+	iter->d.radix = radix;
+}
+
+int
+radix_iter_move(Nit_radix_iter *iter, const void *key, size_t len)
+{
+	const char *str = key;
+	Nit_redge *e;
+	int e_len;
+	const char *e_str;
+
+	if (!len)
+		return 0;
+
+	do {
+		switch (iter->type) {
+		case NIT_T_RADIX:
+			if (!(e = radix_get(iter->d.radix, *str++)))
+				return len;
+
+			--len;
+			iter->type = NIT_T_REDGE;
+			iter->pos = 0;
+			iter->d.redge = e;
+			break;
+		case NIT_T_REDGE:
+			e = iter->d.redge;
+			e_len = e->len - iter->pos;
+			e_str = e->str + iter->pos;
+
+			for (; e_len && len;
+			     --len, --e_len, ++str, ++e_str, ++iter->pos)
+				if (*str != *e_str)
+					return len;
+
+			if (!e_len) {
+				iter->type = NIT_T_RADIX;
+				iter->pos = 0;
+				iter->d.radix = e->radix;
+			}
+		}
+	} while (len);
+
+	return 0;
+}
+
+void *
+radix_iter_get(Nit_radix_iter *iter)
+{
+	if (iter->type == NIT_T_RADIX)
+		return iter->d.radix->dat;
+
+	return NULL;
+}

@@ -169,9 +169,11 @@ static MunitResult
 test_radix(const MunitParameter params[], void* data)
 {
 	Nit_radix *radix = radix_new(NULL);
+	Nit_radix_iter iter;
 
 	int a[8] = { 233, 2341, 0, 1234, 754, 0, 34, 87 };
 	int b[4] = { 233, 2341, 0, 1234 };
+	radix_iter_init(&iter, radix);
 
 	r_insert_int(radix, "firs",     3);
 	r_insert_int(radix, "first",    1);
@@ -198,6 +200,13 @@ test_radix(const MunitParameter params[], void* data)
 
 	munit_assert_int(10, ==, *(int *) radix_lookup(radix, a, sizeof(a)));
 	munit_assert_int(11, ==, *(int *) radix_lookup(radix, b, sizeof(b)));
+
+	radix_iter_move(&iter, "f", 1);
+	radix_iter_move(&iter, "ir", 2);
+	radix_iter_move(&iter, "st", 3);
+
+	munit_assert_int(1, ==, *(int *) radix_iter_get(&iter));
+	munit_assert_int(1, ==, radix_iter_move(&iter, "&", 1));
 
 	return MUNIT_OK;
 }
