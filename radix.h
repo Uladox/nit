@@ -14,6 +14,7 @@ struct nit_radix {
 };
 
 struct nit_redge {
+	Nit_radix *root;
 	Nit_radix *radix;
 	size_t len;
 	char str[];
@@ -47,6 +48,9 @@ nit_radix_lookup(Nit_radix *radix, const void *str, size_t len);
 
 void
 nit_radix_init(Nit_radix *radix, void *dat);
+
+void
+nit_radix_release(Nit_radix *radix);
 
 Nit_radix *
 nit_radix_new(void *dat);

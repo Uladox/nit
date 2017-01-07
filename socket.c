@@ -16,7 +16,6 @@
 
 #include <errno.h>
 #include <pthread.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,9 +40,7 @@ joiner_new(const char *path)
 	jnr->sd = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	if (jnr->sd < 0) {
-		perror("socket");
 		free(jnr);
-
 	        return NULL;
 	}
 
@@ -53,9 +50,7 @@ joiner_new(const char *path)
 	len = strlen(path) + sizeof(jnr->socket.sun_family);
 
 	if (bind(jnr->sd, (struct sockaddr *) &jnr->socket, len) < 0) {
-		perror("bind");
 		free(jnr);
-
 	        return NULL;
 	}
 
@@ -79,9 +74,7 @@ joint_connect(const char *path)
 	jnt->sd = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	if (jnt->sd < 0) {
-		perror("socket");
 		free(jnt);
-
 		return NULL;
 	}
 
@@ -93,14 +86,11 @@ joint_connect(const char *path)
 	pthread_mutex_init(&jnt->end_mutex, NULL);
 
 	if (connect(jnt->sd, (struct sockaddr *) &jnt->socket, len) < 0) {
-		perror("connect");
 		free(jnt);
-
 		return NULL;
 	}
 
 	jnt->end_bool = 0;
-
 	return jnt;
 }
 
@@ -113,7 +103,6 @@ joiner_accept(Nit_joiner *jnr)
 	pcheck(jnt, NULL);
 
 	if (listen(jnr->sd, 5) < 0) {
-		perror("listen");
 		free(jnt);
 
 		return NULL;
@@ -122,7 +111,6 @@ joiner_accept(Nit_joiner *jnr)
 	jnt->sd = accept(jnr->sd, (struct sockaddr *) &jnt->socket, &addrlen);
 
 	if (jnt->sd < 0) {
-		perror("accept");
 		free(jnt);
 
 		return NULL;
@@ -130,7 +118,6 @@ joiner_accept(Nit_joiner *jnr)
 
 	pthread_mutex_init(&jnt->end_mutex, NULL);
 	jnt->end_bool = 0;
-
 	return jnt;
 }
 
@@ -150,7 +137,6 @@ joint_end_check(Nit_joint *jnt)
 	pthread_mutex_lock(&jnt->end_mutex);
 	value = jnt->end_bool;
 	pthread_mutex_unlock(&jnt->end_mutex);
-
 	return value;
 }
 
@@ -186,42 +172,37 @@ is_data_to_read(Nit_joint *jnt)
 
 	FD_ZERO(&set);
 	FD_SET(jnt->sd, &set);
-	/* set_zero_timeout(jnt); */
-
 	return select(FD_SETSIZE, &set, NULL, NULL, &timeout);
 }
 
 static int
-resize_buf(char **buf, int32_t *old_size, int32_t size)
+resize_buf(char **buf, size_t *old_size, size_t size)
 {
 	if (size > *old_size) {
 		free(*buf);
 		*old_size = size;
 
-		if (!(*buf = malloc(size))) {
-			perror("malloc");
-
+		if (!(*buf = malloc(size)))
 			return 0;
-		}
 	}
 
 	return 1;
 }
 
 enum nit_join_status
-joint_read(Nit_joint *jnt, char **buf, int32_t *old_size,
-	   int32_t *msg_size, int32_t offset)
+joint_read(Nit_joint *jnt, char **buf, size_t *old_size,
+	   ssize_t *msg_size, size_t offset)
 {
 	int retval;
-	int32_t size = 0;
+	size_t size = 0;
 	char test;
 
 	pthread_mutex_lock(&jnt->end_mutex);
-
 	retval = is_data_to_read(jnt);
 
 	if (retval > 0) {
 		if (!recv(jnt->sd, &test, 1, MSG_PEEK | MSG_DONTWAIT)) {
+			jnt->end_bool = 1;
 			retval = NIT_JOIN_CLOSED;
 			goto end;
 		}
@@ -229,35 +210,35 @@ joint_read(Nit_joint *jnt, char **buf, int32_t *old_size,
 		recv(jnt->sd, &size, sizeof(size), 0);
 
 		if (!resize_buf(buf, old_size, offset + size)) {
+			jnt->end_bool = 1;
 			retval = NIT_JOIN_ERROR;
 			goto end;
 		}
 
 		*msg_size = recv(jnt->sd, *buf, size, 0);
 
-		if (*msg_size <= 0) {
-			if (*msg_size < 0)
-				perror("recv");
-
+		if (*msg_size < 0) {
 			jnt->end_bool = 1;
+			retval = NIT_JOIN_ERROR;
+			goto end;
 		}
+
+		if (!*msg_size)
+			jnt->end_bool = 1;
 	}
 end:
 	pthread_mutex_unlock(&jnt->end_mutex);
-
 	return retval;
 }
 
 int
-joint_send(Nit_joint *jnt, const void *msg, int32_t msg_size)
+joint_send(Nit_joint *jnt, const void *msg, size_t msg_size)
 {
 	if (joint_end_check(jnt))
 		return 0;
 
 	if (send(jnt->sd, &msg_size, sizeof(msg_size), MSG_NOSIGNAL) < 0 ||
 	    send(jnt->sd, msg, msg_size, MSG_NOSIGNAL) < 0) {
-		perror("send");
-
 		return 0;
 	}
 

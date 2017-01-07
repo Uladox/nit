@@ -65,6 +65,12 @@ radix_init(Nit_radix *radix, void *dat)
 	radix->map.entry_num = -1;
 }
 
+/* void */
+/* nit_radix_release(Nit_radix *radix) */
+/* { */
+	
+/* } */
+
 Nit_radix *
 radix_new(void *dat)
 {
@@ -169,7 +175,7 @@ radix_iter_init(Nit_radix_iter *iter, Nit_radix *radix)
 {
 	iter->type = NIT_T_RADIX;
 	iter->pos = 0;
-	iter->root = root;
+	iter->root = radix;
 	iter->d.radix = radix;
 }
 

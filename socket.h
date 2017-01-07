@@ -16,7 +16,6 @@
 
 /* Include these
    #include <pthread.h>
-   #include <stdint.h>
    #include <sys/select.h>
    #include <sys/socket.h>
    #include <sys/un.h>
@@ -67,11 +66,11 @@ void
 nit_joint_kill(Nit_joint *jnt);
 
 enum nit_join_status
-nit_joint_read(Nit_joint *jnt, char **buf, int32_t *old_size,
-	       int32_t *msg_size, int32_t offset);
+nit_joint_read(Nit_joint *jnt, char **buf, size_t *old_size,
+	       ssize_t *msg_size, size_t offset);
 
 int
-nit_joint_send(Nit_joint *jnt, const void *msg, int32_t msg_size);
+nit_joint_send(Nit_joint *jnt, const void *msg, size_t msg_size);
 
 #if defined NIT_SHORT_NAMES || defined NIT_SOCKET_SHORT_NAMES
 # define joiner_new(...)       nit_joiner_new(__VA_ARGS__)
