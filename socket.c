@@ -141,10 +141,10 @@ joint_end_check(Nit_joint *jnt)
 }
 
 void
-joint_end_mutate(Nit_joint *jnt, int value)
+joint_end(Nit_joint *jnt)
 {
 	pthread_mutex_lock(&jnt->end_mutex);
-	jnt->end_bool = value;
+	jnt->end_bool = 1;
 	pthread_mutex_unlock(&jnt->end_mutex);
 }
 
@@ -154,14 +154,14 @@ joint_kill(Nit_joint *jnt)
 	int true_val = 1;
 
 	pthread_mutex_lock(&jnt->end_mutex);
-        joint_end_mutate(jnt, 1);
+        joint_end(jnt);
 	setsockopt(jnt->sd, SOL_SOCKET, SO_REUSEADDR,
 		   &true_val, sizeof(int));
 	pthread_mutex_unlock(&jnt->end_mutex);
 }
 
-static int
-is_data_to_read(Nit_joint *jnt)
+int
+joint_ready(Nit_joint *jnt)
 {
 	fd_set set;
 	struct timeval timeout = {
@@ -193,42 +193,41 @@ enum nit_join_status
 joint_read(Nit_joint *jnt, char **buf, size_t *old_size,
 	   ssize_t *msg_size, size_t offset)
 {
-	int retval;
+	int state = joint_ready(jnt);
 	size_t size = 0;
 	char test;
 
-	pthread_mutex_lock(&jnt->end_mutex);
-	retval = is_data_to_read(jnt);
+	if (!state)
+	        return NIT_JOIN_NONE;
 
-	if (retval > 0) {
-		if (!recv(jnt->sd, &test, 1, MSG_PEEK | MSG_DONTWAIT)) {
-			jnt->end_bool = 1;
-			retval = NIT_JOIN_CLOSED;
-			goto end;
-		}
-
-		recv(jnt->sd, &size, sizeof(size), 0);
-
-		if (!resize_buf(buf, old_size, offset + size)) {
-			jnt->end_bool = 1;
-			retval = NIT_JOIN_ERROR;
-			goto end;
-		}
-
-		*msg_size = recv(jnt->sd, *buf, size, 0);
-
-		if (*msg_size < 0) {
-			jnt->end_bool = 1;
-			retval = NIT_JOIN_ERROR;
-			goto end;
-		}
-
-		if (!*msg_size)
-			jnt->end_bool = 1;
+	if (state < 0) {
+		joint_end(jnt);
+	        return NIT_JOIN_ERROR;
 	}
-end:
-	pthread_mutex_unlock(&jnt->end_mutex);
-	return retval;
+
+	if (!recv(jnt->sd, &test, 1, MSG_PEEK | MSG_DONTWAIT)) {
+	        joint_end(jnt);
+	        return NIT_JOIN_CLOSED;
+	}
+
+	recv(jnt->sd, &size, sizeof(size), 0);
+
+	if (!resize_buf(buf, old_size, offset + size)) {
+		joint_end(jnt);
+	        return NIT_JOIN_ERROR;
+	}
+
+	*msg_size = recv(jnt->sd, *buf, size, 0);
+
+	if (*msg_size < 0) {
+	        joint_end(jnt);
+	        return NIT_JOIN_ERROR;
+	}
+
+	if (!*msg_size)
+		joint_end(jnt);
+
+	return NIT_JOIN_OK;
 }
 
 int

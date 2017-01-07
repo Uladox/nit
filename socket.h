@@ -35,7 +35,7 @@ typedef struct {
 } Nit_joint;
 
 enum nit_join_status {
-	NIT_JOIN_CLOSED = -2,
+	NIT_JOIN_CLOSED,
 	NIT_JOIN_ERROR,
 	NIT_JOIN_NONE,
 	NIT_JOIN_OK,
@@ -60,10 +60,13 @@ int
 nit_joint_end_check(Nit_joint *jnt);
 
 void
-nit_joint_end_mutate(Nit_joint *jnt, int value);
+nit_joint_end(Nit_joint *jnt);
 
 void
 nit_joint_kill(Nit_joint *jnt);
+
+int
+nit_joint_ready(Nit_joint *jnt);
 
 enum nit_join_status
 nit_joint_read(Nit_joint *jnt, char **buf, size_t *old_size,
@@ -79,8 +82,9 @@ nit_joint_send(Nit_joint *jnt, const void *msg, size_t msg_size);
 # define joiner_accept(...)    nit_joiner_accept(__VA_ARGS__)
 # define joint_free(...)       nit_joint_free(__VA_ARGS__)
 # define joint_end_check(...)  nit_joint_end_check(__VA_ARGS__)
-# define joint_end_mutate(...) nit_joint_end_mutate(__VA_ARGS__)
+# define joint_end(...)        nit_joint_end(__VA_ARGS__)
 # define joint_kill(...)       nit_joint_kill(__VA_ARGS__)
+# define joint_ready(...)      nit_joint_ready(__VA_ARGS__)
 # define joint_read(...)       nit_joint_read(__VA_ARGS__)
 # define joint_send(...)       nit_joint_send(__VA_ARGS__)
 #endif
