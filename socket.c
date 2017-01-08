@@ -47,7 +47,7 @@ joiner_new(const char *path)
 	memset(&jnr->socket, 0, sizeof(jnr->socket));
 	jnr->socket.sun_family = AF_UNIX;
 	strcpy(jnr->socket.sun_path + 1, path);
-	len = strlen(path) + sizeof(jnr->socket.sun_family);
+	len = strlen(path) + sizeof(jnr->socket.sun_family) + 1;
 
 	if (bind(jnr->sd, (struct sockaddr *) &jnr->socket, len) < 0) {
 		free(jnr);
@@ -81,7 +81,7 @@ joint_connect(const char *path)
 	memset(&jnt->socket, 0, sizeof(jnt->socket));
 	jnt->socket.sun_family = AF_UNIX;
 	strcpy(jnt->socket.sun_path + 1, path);
-        len = strlen(path) + sizeof(jnt->socket.sun_family);
+        len = strlen(path) + sizeof(jnt->socket.sun_family) + 1;
 
 	pthread_mutex_init(&jnt->end_mutex, NULL);
 
