@@ -1,5 +1,4 @@
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,6 +91,12 @@ gap_resize(Nit_gap *gap, size_t size)
 	gap->size = new_size;
 
 	return 0;
+}
+
+void
+nit_gap_dispose(Nit_gap *gap)
+{
+	free(gap->bytes);
 }
 
 static void
@@ -225,7 +230,6 @@ gap_str(const Nit_gap *gap)
 	pcheck(str, NULL);
 	gap_read(gap, str);
 	str[size] = '\0';
-
 	return str;
 }
 
@@ -236,7 +240,6 @@ gap_copy_f(const Nit_gap *gap, void *data, size_t size)
 			return 1;
 
 	memcpy(data, bytes_past_end(gap), size);
-
 	return 0;
 }
 
@@ -247,7 +250,6 @@ gap_copy_b(const Nit_gap *gap, void *data, size_t size)
 			return 1;
 
 	memcpy(data, gap->bytes + gap->start - size, size);
-
 	return 0;
 }
 
@@ -258,7 +260,6 @@ gap_cut_f(Nit_gap *gap, void *data, size_t size)
 		return 1;
 
 	gap->end += size;
-
 	return 0;
 }
 
@@ -294,7 +295,6 @@ gap_erase_f(Nit_gap *gap, size_t amount)
 			return 1;
 
 	gap->end = pos;
-
 	return 0;
 }
 
@@ -307,7 +307,6 @@ gap_erase_b(Nit_gap *gap, size_t amount)
 			return 1;
 
 	gap->start = pos;
-
 	return 0;
 }
 
@@ -364,6 +363,5 @@ nit_gap_compare(const Nit_gap *gap1, const Nit_gap *gap2)
 	str1 += num2;
 	str2 = bytes_past_end(gaps[!shorter]);
 	num2 = size_past_end(gaps[!shorter]);
-
 	return !strncmp(str1, str2, num2);
 }

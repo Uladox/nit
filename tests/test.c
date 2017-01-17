@@ -12,7 +12,7 @@
 #include "../hset.h"
 #include "../hmap.h"
 #include "../gap-buf.h"
-#include "../gc.h"
+/* #include "../gc.h" */
 #include "../radix.h"
 
 static void
@@ -133,30 +133,30 @@ next(void *scan, void *iter)
 	return NULL;
 }
 
-static MunitResult
-test_gc(const MunitParameter params[], void* data)
-{
-	Nit_gc *gc = gc_new(NULL, next);
-	int *val = gc_malloc(gc, sizeof(int));
-	int *val2 = gc_calloc(gc, sizeof(int));
+/* static MunitResult */
+/* test_gc(const MunitParameter params[], void* data) */
+/* { */
+/* 	Nit_gc *gc = gc_new(NULL, next); */
+/* 	int *val = gc_malloc(gc, sizeof(int)); */
+/* 	int *val2 = gc_calloc(gc, sizeof(int)); */
 
-	/* munit_assert_not_null(val); */
-	munit_assert_int(*val2, ==, 0);
+/* 	/\* munit_assert_not_null(val); *\/ */
+/* 	munit_assert_int(*val2, ==, 0); */
 
-	munit_assert_int(gc_free(gc), ==, 1);
+/* 	munit_assert_int(gc_free(gc), ==, 1); */
 
-	munit_assert_int(gc_scan_1(gc), ==, 0);
-	munit_assert_int(gc_scan_1(gc), ==, 1);
-	munit_assert_int(gc_restart(gc, NULL), ==, 0);
-	munit_assert_not_null((val = gc_collect_1(gc)));
-	gc_reclaim(gc, val);
-	munit_assert_not_null((val = gc_collect_1(gc)));
-	gc_reclaim(gc, val);
+/* 	munit_assert_int(gc_scan_1(gc), ==, 0); */
+/* 	munit_assert_int(gc_scan_1(gc), ==, 1); */
+/* 	munit_assert_int(gc_restart(gc, NULL), ==, 0); */
+/* 	munit_assert_not_null((val = gc_collect_1(gc))); */
+/* 	gc_reclaim(gc, val); */
+/* 	munit_assert_not_null((val = gc_collect_1(gc))); */
+/* 	gc_reclaim(gc, val); */
 
-	munit_assert_int(gc_free(gc), ==, 0);
+/* 	munit_assert_int(gc_free(gc), ==, 0); */
 
-	return MUNIT_OK;
-}
+/* 	return MUNIT_OK; */
+/* } */
 
 #define r_insert_int(radix, str, val)		\
 	radix_insert(radix, str, sizeof(str), &(int){ val })
@@ -215,8 +215,6 @@ static MunitTest test_suite_tests[] = {
 	{ (char *) "/hmap", test_hmap,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ (char *) "/gap-buf", test_gap_buf,
-	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
-	{ (char *) "/gc", test_gc,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ (char *) "/radix", test_radix,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },

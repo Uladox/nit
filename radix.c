@@ -179,7 +179,7 @@ radix_iter_init(Nit_radix_iter *iter, Nit_radix *radix)
 	iter->d.radix = radix;
 }
 
-int
+size_t
 radix_iter_move(Nit_radix_iter *iter, const void *key, size_t len)
 {
 	const char *str = key;
@@ -197,6 +197,14 @@ radix_iter_move(Nit_radix_iter *iter, const void *key, size_t len)
 				return len;
 
 			--len;
+
+			if (!e->len) {
+				iter->type = NIT_T_RADIX;
+				iter->pos = 0;
+				iter->d.radix = e->radix;
+				break;
+			}
+
 			iter->type = NIT_T_REDGE;
 			iter->pos = 0;
 			iter->d.redge = e;

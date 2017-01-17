@@ -3,6 +3,7 @@
    #include <stdlib.h> or something else with size_t
    #include "list.h"
    #include "hset.h"
+   #include "hmap.h"
  */
 
 typedef struct nit_radix Nit_radix;
@@ -69,7 +70,8 @@ nit_radix_insert(Nit_radix *radix, const void *key,
 void
 nit_radix_iter_init(Nit_radix_iter *iter, Nit_radix *radix);
 
-int
+/* returns how much has been moved */
+size_t
 nit_radix_iter_move(Nit_radix_iter *iter, const void *key, size_t len);
 
 void *

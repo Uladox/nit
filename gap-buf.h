@@ -1,9 +1,8 @@
 /* Include these
-   #include <stdint.h>
    #include <stddef.h>
  */
 
-typedef struct {
+typedef struct nit_gap {
 	char *bytes;
 	size_t size;
 	/* Used to store index of gap, not actual ptr dif. */
@@ -25,11 +24,8 @@ nit_gap_replicate(Nit_gap *rep, const Nit_gap *src);
 int
 nit_gap_resize(Nit_gap *gap, size_t size);
 
-static inline void
-nit_gap_dispose(Nit_gap *gap)
-{
-	free(gap->bytes);
-}
+void
+nit_gap_dispose(Nit_gap *gap);
 
 /* Text printing */
 
