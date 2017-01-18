@@ -217,12 +217,27 @@ test_vec(const MunitParameter params[], void* data)
 {
 	Nit_vec *vec = vec_new(0);
 	char *str = "hello, world!\n";
+	char *str2 = "cat";
+	char *str3 = "dog";
 
 	vec_push_ptr(vec, str);
 
         munit_assert_ptr_equal(str, vec_get_last_ptr(vec));
 
+	vec_push_ptr(vec, str3);
+	vec_insert_ptr(vec, str2, 1);
+
+        munit_assert_ptr_equal(str3, vec_get_last_ptr(vec));
+
+	vec_remove_ptr(vec, 2);
+
+        munit_assert_ptr_equal(str2, vec_get_last_ptr(vec));
+
+	munit_assert_ptr_equal(str2, vec_pop_ptr(vec));
+	munit_assert_ptr_equal(str, vec_pop_ptr(vec));
+
 	vec_free(vec);
+	return MUNIT_OK;
 }
 
 static MunitTest test_suite_tests[] = {
@@ -231,6 +246,8 @@ static MunitTest test_suite_tests[] = {
 	{ (char *) "/gap-buf", test_gap_buf,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ (char *) "/radix", test_radix,
+	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
+	{ (char *) "/vec", test_vec,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
 
@@ -252,6 +269,7 @@ main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 	/* test_gap_buf(NULL, NULL); */
 	/* test_gc(NULL, NULL); */
 	/* test_radix(NULL, NULL); */
+	/* test_vec(NULL, NULL); */
 
 	return munit_suite_main(&test_suite, NULL, argc, argv);
 }

@@ -42,6 +42,42 @@ vec_free(Nit_vec *vec)
 }
 
 int
+vec_insert(Nit_vec *vec, void *dat, size_t num, size_t size)
+{
+	char *new_dat;
+	size_t new_max;
+	size_t pos = num * size;
+
+	if (vec->max < vec->size + size) {
+		new_max = size > vec->max ? vec->max + size : 2 * vec->max;
+		new_dat = malloc(new_max);
+		pcheck(new_dat, 0);
+		memcpy(new_dat, vec->dat, pos);
+		memcpy(new_dat + pos, dat, size);
+		memcpy(new_dat + pos + size, vec->dat + pos, vec->size - pos);
+		memset(new_dat + vec->max + size, 0,
+		       new_max - (vec->max + size));
+		vec->size += size;
+		vec->max = new_max;
+		free(vec->dat);
+		vec->dat = new_dat;
+	} else {
+		memmove(vec->dat + pos + size, vec->dat + pos, vec->size - pos);
+		memcpy(vec->dat + pos, dat, size);
+		vec->size += size;
+	}
+
+	return 1;
+
+}
+
+int
+vec_insert_ptr(Nit_vec *vec, void *ptr, size_t num)
+{
+	return vec_insert(vec, &ptr, num, sizeof(ptr));
+}
+
+int
 vec_push(Nit_vec *vec, void *dat, size_t size)
 {
 	char *new_dat;
@@ -51,13 +87,13 @@ vec_push(Nit_vec *vec, void *dat, size_t size)
 		new_max = size > vec->max ? vec->max + size : 2 * vec->max;
 		new_dat = realloc(vec->dat, new_max);
 		pcheck(new_dat, 0);
-		memcpy(new_dat, dat, size);
+		memcpy(new_dat + vec->size, dat, size);
 		vec->size += size;
 		vec->max = new_max;
 		vec->dat = new_dat;
 		memset(new_dat + vec->size, 0, new_max - vec->size);
 	} else {
-		memcpy(vec->dat, dat, size);
+		memcpy(vec->dat + vec->size, dat, size);
 		vec->size += size;
 	}
 
@@ -67,7 +103,7 @@ vec_push(Nit_vec *vec, void *dat, size_t size)
 int
 vec_push_ptr(Nit_vec *vec, void *ptr)
 {
-	return vec_push(vec, &ptr, sizeof(void *));
+	return vec_push(vec, &ptr, sizeof(ptr));
 }
 
 void *
@@ -98,10 +134,16 @@ vec_get_ptr(Nit_vec *vec, size_t num)
 	return *(void **) (vec->dat + pos);
 }
 
+static size_t
+last_ptr_index(Nit_vec *vec)
+{
+	return (vec->size - sizeof(void *)) / sizeof(void *);
+}
+
 void *
 vec_get_last_ptr(Nit_vec *vec)
 {
-	return vec_get_ptr(vec, (vec->size - sizeof(void *)) / sizeof(void *));
+	return vec_get_ptr(vec, last_ptr_index(vec));
 }
 
 int
@@ -113,4 +155,20 @@ vec_remove(Nit_vec *vec, size_t num, size_t size)
 	memmove(end, end + size, (vec->dat + vec->size) - (end + size));
 	memset(vec->dat + (vec->size -= size), 0, size);
 	return 1;
+}
+
+int
+vec_remove_ptr(Nit_vec *vec, size_t num)
+{
+	return vec_remove(vec, num, sizeof(void *));
+}
+
+void *
+vec_pop_ptr(Nit_vec *vec)
+{
+	void *ptr = vec_get_last_ptr(vec);
+
+	pcheck(ptr, NULL);
+	vec_remove_ptr(vec, last_ptr_index(vec));
+	return ptr;
 }
