@@ -14,6 +14,7 @@
 #include "../gap-buf.h"
 /* #include "../gc.h" */
 #include "../radix.h"
+#include "../vec.h"
 
 static void
 hmap_free_contents(void *key, void *storage)
@@ -209,6 +210,19 @@ test_radix(const MunitParameter params[], void* data)
 	munit_assert_int(1, ==, radix_iter_move(&iter, "&", 1));
 
 	return MUNIT_OK;
+}
+
+static MunitResult
+test_vec(const MunitParameter params[], void* data)
+{
+	Nit_vec *vec = vec_new(0);
+	char *str = "hello, world!\n";
+
+	vec_push_ptr(vec, str);
+
+        munit_assert_ptr_equal(str, vec_get_last_ptr(vec));
+
+	vec_free(vec);
 }
 
 static MunitTest test_suite_tests[] = {
