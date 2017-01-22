@@ -1,4 +1,5 @@
 /* Include these
+   #include <stdint.h>
    #include <stdlib.h> or something else with size_t
 */
 
@@ -12,6 +13,18 @@ typedef struct nit_lvec {
 	size_t max;
 	char *dat;
 } Nit_lvec;
+
+typedef struct nit_lvec_byte_iter {
+	size_t pos;
+	size_t end;
+	char *arr;
+} Nit_lvec_byte_iter;
+
+typedef struct nit_lvec_ptr_iter {
+	size_t pos;
+	size_t end;
+	void **arr;
+} Nit_lvec_ptr_iter;
 
 int
 nit_lvec_init(Nit_lvec *lvec, size_t max);
@@ -58,21 +71,53 @@ nit_lvec_remove_ptr(Nit_lvec *lvec, size_t num);
 void *
 nit_lvec_pop_ptr(Nit_lvec *lvec);
 
+void
+nit_lvec_byte_iter_init(Nit_lvec_byte_iter *iter, Nit_lvec *lvec);
+
+void
+nit_lvec_ptr_iter_init(Nit_lvec_ptr_iter *iter, Nit_lvec *lvec);
+
+int
+nit_lvec_byte_iter_inc(Nit_lvec_byte_iter *iter);
+
+int
+nit_lvec_byte_iter_dec(Nit_lvec_byte_iter *iter);
+
+char
+nit_lvec_byte_iter_get(Nit_lvec_byte_iter *iter);
+
+int
+nit_lvec_ptr_iter_inc(Nit_lvec_ptr_iter *iter);
+
+int
+nit_lvec_ptr_iter_dec(Nit_lvec_ptr_iter *iter);
+
+void *
+nit_lvec_ptr_iter_get(Nit_lvec_ptr_iter *iter);
+
 # if defined NIT_SHORT_NAMES || defined NIT_LVEC_SHORT_NAMES
-# define lvec_foreach(...)      nit_lvec_foreach(__VA_ARGS__)
-# define lvec_init(...)         nit_lvec_init(__VA_ARGS__)
-# define lvec_dispose(...)      nit_lvec_dispose(__VA_ARGS__)
-# define lvec_new(...)          nit_lvec_new(__VA_ARGS__)
-# define lvec_free(...)         nit_lvec_free(__VA_ARGS__)
-# define lvec_insert(...)       nit_lvec_insert(__VA_ARGS__)
-# define lvec_insert_ptr(...)   nit_lvec_insert_ptr(__VA_ARGS__)
-# define lvec_push(...)         nit_lvec_push(__VA_ARGS__)
-# define lvec_push_ptr(...)     nit_lvec_push_ptr(__VA_ARGS__)
-# define lvec_get(...)          nit_lvec_get(__VA_ARGS__)
-# define lvec_get_last(...)     nit_lvec_get_last(__VA_ARGS__)
-# define lvec_get_ptr(...)      nit_lvec_get_ptr(__VA_ARGS__)
-# define lvec_get_last_ptr(...) nit_lvec_get_last_ptr(__VA_ARGS__)
-# define lvec_remove(...)       nit_lvec_remove(__VA_ARGS__)
-# define lvec_remove_ptr(...)   nit_lvec_remove_ptr(__VA_ARGS__)
-# define lvec_pop_ptr(...)      nit_lvec_pop_ptr(__VA_ARGS__)
+# define lvec_foreach(...)        nit_lvec_foreach(__VA_ARGS__)
+# define lvec_init(...)           nit_lvec_init(__VA_ARGS__)
+# define lvec_dispose(...)        nit_lvec_dispose(__VA_ARGS__)
+# define lvec_new(...)            nit_lvec_new(__VA_ARGS__)
+# define lvec_free(...)           nit_lvec_free(__VA_ARGS__)
+# define lvec_insert(...)         nit_lvec_insert(__VA_ARGS__)
+# define lvec_insert_ptr(...)     nit_lvec_insert_ptr(__VA_ARGS__)
+# define lvec_push(...)           nit_lvec_push(__VA_ARGS__)
+# define lvec_push_ptr(...)       nit_lvec_push_ptr(__VA_ARGS__)
+# define lvec_get(...)            nit_lvec_get(__VA_ARGS__)
+# define lvec_get_last(...)       nit_lvec_get_last(__VA_ARGS__)
+# define lvec_get_ptr(...)        nit_lvec_get_ptr(__VA_ARGS__)
+# define lvec_get_last_ptr(...)   nit_lvec_get_last_ptr(__VA_ARGS__)
+# define lvec_remove(...)         nit_lvec_remove(__VA_ARGS__)
+# define lvec_remove_ptr(...)     nit_lvec_remove_ptr(__VA_ARGS__)
+# define lvec_byte_iter_init(...) nit_lvec_byte_iter_init(__VA_ARGS__)
+# define lvec_ptr_iter_init(...)  nit_lvec_ptr_iter_init(__VA_ARGS__)
+# define lvec_byte_iter_inc(...)  nit_lvec_byte_iter_inc(__VA_ARGS__)
+# define lvec_pop_ptr(...)        nit_lvec_pop_ptr(__VA_ARGS__)
+# define lvec_byte_iter_dec(...)  nit_lvec_byte_iter_dec(__VA_ARGS__)
+# define lvec_byte_iter_get(...)  nit_lvec_byte_iter_get(__VA_ARGS__)
+# define lvec_ptr_iter_inc(...)   nit_lvec_ptr_iter_inc(__VA_ARGS__)
+# define lvec_ptr_iter_dec(...)   nit_lvec_ptr_iter_dec(__VA_ARGS__)
+# define lvec_ptr_iter_get(...)   nit_lvec_ptr_iter_get(__VA_ARGS__)
 #endif

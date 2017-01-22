@@ -237,7 +237,7 @@ hset_add(Nit_hset *set, void *dat, uint32_t key_size)
 	Nit_hentry **bin;
 
 	pcheck(entry, 0);
-	bin = set->bins + (entry->hash % bin_num[set->bin_pos])
+	bin = set->bins + (entry->hash % bin_num[set->bin_pos]);
 	LIST_CONS(entry, *bin);
         *bin = entry;
 	return 1;

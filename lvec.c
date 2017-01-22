@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -171,4 +172,72 @@ lvec_pop_ptr(Nit_lvec *lvec)
 	pcheck(ptr, NULL);
 	lvec_remove_ptr(lvec, last_ptr_index(lvec));
 	return ptr;
+}
+
+void
+lvec_byte_iter_init(Nit_lvec_byte_iter *iter, Nit_lvec *lvec)
+{
+	iter->pos = 0;
+	iter->end = lvec->size - 1;
+	iter->arr = lvec->dat;
+}
+
+void
+lvec_ptr_iter_init(Nit_lvec_ptr_iter *iter, Nit_lvec *lvec)
+{
+	iter->pos = 0;
+	iter->end = last_ptr_index(lvec);
+	iter->arr = (void **) lvec->dat;
+}
+
+int
+lvec_byte_iter_inc(Nit_lvec_byte_iter *iter)
+{
+	if (iter->pos >= iter->end)
+		return 0;
+
+	++iter->pos;
+	return 1;
+}
+
+int
+lvec_byte_iter_dec(Nit_lvec_byte_iter *iter)
+{
+	if (!iter->pos)
+		return 0;
+
+	--iter->pos;
+	return 1;
+}
+
+char
+lvec_byte_iter_get(Nit_lvec_byte_iter *iter)
+{
+	return iter->arr[iter->pos];
+}
+
+int
+lvec_ptr_iter_inc(Nit_lvec_ptr_iter *iter)
+{
+	if (iter->pos >= iter->end)
+		return 0;
+
+	++iter->pos;
+	return 1;
+}
+
+int
+lvec_ptr_iter_dec(Nit_lvec_ptr_iter *iter)
+{
+	if (!iter->pos)
+		return 0;
+
+	--iter->pos;
+	return 1;
+}
+
+void *
+lvec_ptr_iter_get(Nit_lvec_ptr_iter *iter)
+{
+	return iter->arr[iter->pos];
 }

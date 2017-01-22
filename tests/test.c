@@ -217,6 +217,7 @@ static MunitResult
 test_vec(const MunitParameter params[], void* data)
 {
 	Nit_vec *vec = vec_new(0);
+	Nit_vec_ptr_iter iter;
 	char *str = "hello, world!\n";
 	char *str2 = "cat";
 	char *str3 = "dog";
@@ -236,6 +237,24 @@ test_vec(const MunitParameter params[], void* data)
 
 	munit_assert_ptr_equal(str2, vec_pop_ptr(vec));
 	munit_assert_ptr_equal(str, vec_pop_ptr(vec));
+
+	vec_push_ptr(vec, str3);
+	vec_push_ptr(vec, str2);
+	vec_push_ptr(vec, str);
+
+	vec_ptr_iter_init(&iter, vec);
+	munit_assert_ptr_equal(str3, vec_ptr_iter_get(&iter));
+        vec_ptr_iter_inc(&iter);
+	munit_assert_ptr_equal(str2, vec_ptr_iter_get(&iter));
+        vec_ptr_iter_inc(&iter);
+	munit_assert_ptr_equal(str, vec_ptr_iter_get(&iter));
+        munit_assert_int(vec_ptr_iter_inc(&iter), ==, 0);
+
+        vec_ptr_iter_dec(&iter);
+	munit_assert_ptr_equal(str2, vec_ptr_iter_get(&iter));
+        vec_ptr_iter_dec(&iter);
+	munit_assert_ptr_equal(str3, vec_ptr_iter_get(&iter));
+        munit_assert_int(vec_ptr_iter_dec(&iter), ==, 0);
 
 	vec_free(vec);
 	return MUNIT_OK;

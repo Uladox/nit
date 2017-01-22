@@ -173,3 +173,71 @@ vec_pop_ptr(Nit_vec *vec)
 	vec_remove_ptr(vec, last_ptr_index(vec));
 	return ptr;
 }
+
+void
+vec_byte_iter_init(Nit_vec_byte_iter *iter, Nit_vec *vec)
+{
+	iter->pos = 0;
+	iter->end = vec->size - 1;
+	iter->arr = vec->dat;
+}
+
+void
+vec_ptr_iter_init(Nit_vec_ptr_iter *iter, Nit_vec *vec)
+{
+	iter->pos = 0;
+	iter->end = last_ptr_index(vec);
+	iter->arr = (void **) vec->dat;
+}
+
+int
+vec_byte_iter_inc(Nit_vec_byte_iter *iter)
+{
+	if (iter->pos >= iter->end)
+		return 0;
+
+	++iter->pos;
+	return 1;
+}
+
+int
+vec_byte_iter_dec(Nit_vec_byte_iter *iter)
+{
+	if (!iter->pos)
+		return 0;
+
+	--iter->pos;
+	return 1;
+}
+
+char
+vec_byte_iter_get(Nit_vec_byte_iter *iter)
+{
+	return iter->arr[iter->pos];
+}
+
+int
+vec_ptr_iter_inc(Nit_vec_ptr_iter *iter)
+{
+	if (iter->pos >= iter->end)
+		return 0;
+
+	++iter->pos;
+	return 1;
+}
+
+int
+vec_ptr_iter_dec(Nit_vec_ptr_iter *iter)
+{
+	if (!iter->pos)
+		return 0;
+
+	--iter->pos;
+	return 1;
+}
+
+void *
+vec_ptr_iter_get(Nit_vec_ptr_iter *iter)
+{
+	return iter->arr[iter->pos];
+}
