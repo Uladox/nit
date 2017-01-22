@@ -16,14 +16,13 @@
 
 /* Include these
    #include <stdint.h>
-   #include "list.h"
+   #include "vec.h"
  */
 
 typedef struct nit_hentry {
-	Nit_list next;
-	void *dat;
 	uint32_t key_size;
 	uint32_t hash;
+	void *dat;
 } Nit_hentry;
 
 typedef void(*Nit_set_free)(void *dat);
@@ -32,7 +31,7 @@ typedef struct nit_hset Nit_hset;
 struct nit_hset {
 	int entry_num;
 	int bin_pos;
-	Nit_hentry **bins;
+	Nit_vec *bins;
 };
 
 typedef struct nit_hset_iter Nit_hset_iter;
@@ -40,7 +39,7 @@ typedef struct nit_hset_iter Nit_hset_iter;
 struct nit_hset_iter {
 	int bin_num;
 	int bin_last;
-	Nit_hentry **bins;
+	Nit_vec *bins;
 	Nit_hentry *entry;
 };
 
@@ -67,9 +66,6 @@ nit_hset_entry(Nit_hset *set, void *dat, uint32_t key_size);
 
 int
 nit_hset_add_reduce(Nit_hset *set);
-
-int
-hset_add_unique(Nit_hset *set, void *dat, uint32_t key_size);
 
 int
 nit_hset_add(Nit_hset *set, void *dat, uint32_t key_size);
@@ -111,7 +107,6 @@ nit_hset_iter_next(Nit_hset_iter *iter);
 # define hset_free(...)       nit_hset_free(__VA_ARGS__)
 # define hset_entry(...)      nit_hset_entry(__VA_ARGS__)
 # define hset_add_reduce(...) nit_hset_add_reduce(__VA_ARGS__)
-# define hset_add_unique(...) nit_hset_add_unique(__VA_ARGS__)
 # define hset_add(...)        nit_hset_add(__VA_ARGS__)
 # define hset_copy_add(...)   nit_hset_copy_add(__VA_ARGS__)
 # define hset_remove(...)     nit_hset_remove(__VA_ARGS__)

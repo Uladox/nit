@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -7,7 +8,7 @@
 #include "vec.h"
 
 int
-vec_init(Nit_vec *vec, size_t max)
+vec_init(Nit_vec *vec, uint32_t max)
 {
 	vec->size = 0;
 	return !!(vec->dat = calloc(vec->max = max, 1));
@@ -20,7 +21,7 @@ vec_dispose(Nit_vec *vec)
 }
 
 Nit_vec *
-vec_new(size_t max)
+vec_new(uint32_t max)
 {
 	Nit_vec *vec = palloc(vec);
 
@@ -42,11 +43,11 @@ vec_free(Nit_vec *vec)
 }
 
 int
-vec_insert(Nit_vec *vec, void *dat, size_t num, size_t size)
+vec_insert(Nit_vec *vec, void *dat, uint32_t num, uint32_t size)
 {
 	char *new_dat;
-	size_t new_max;
-	size_t pos = num * size;
+	uint32_t new_max;
+	uint32_t pos = num * size;
 
 	if (vec->max < vec->size + size) {
 		new_max = size > vec->max ? vec->max + size : 2 * vec->max;
@@ -72,16 +73,16 @@ vec_insert(Nit_vec *vec, void *dat, size_t num, size_t size)
 }
 
 int
-vec_insert_ptr(Nit_vec *vec, void *ptr, size_t num)
+vec_insert_ptr(Nit_vec *vec, void *ptr, uint32_t num)
 {
 	return vec_insert(vec, &ptr, num, sizeof(ptr));
 }
 
 int
-vec_push(Nit_vec *vec, void *dat, size_t size)
+vec_push(Nit_vec *vec, void *dat, uint32_t size)
 {
 	char *new_dat;
-	size_t new_max;
+	uint32_t new_max;
 
 	if (vec->max < vec->size + size) {
 		new_max = size > vec->max ? vec->max + size : 2 * vec->max;
@@ -107,9 +108,9 @@ vec_push_ptr(Nit_vec *vec, void *ptr)
 }
 
 void *
-vec_get(Nit_vec *vec, size_t num, size_t size)
+vec_get(Nit_vec *vec, uint32_t num, uint32_t size)
 {
-	size_t pos = num * size;
+	uint32_t pos = num * size;
 
 	if (pos >= vec->size)
 		return NULL;
@@ -118,15 +119,15 @@ vec_get(Nit_vec *vec, size_t num, size_t size)
 }
 
 void *
-vec_get_last(Nit_vec *vec, size_t size)
+vec_get_last(Nit_vec *vec, uint32_t size)
 {
 	return vec_get(vec, (vec->size - size) / size, size);
 }
 
 void *
-vec_get_ptr(Nit_vec *vec, size_t num)
+vec_get_ptr(Nit_vec *vec, uint32_t num)
 {
-	size_t pos = num * sizeof(void *);
+	uint32_t pos = num * sizeof(void *);
 
 	if (pos >= vec->size)
 		return NULL;
@@ -134,7 +135,7 @@ vec_get_ptr(Nit_vec *vec, size_t num)
 	return *(void **) (vec->dat + pos);
 }
 
-static size_t
+static uint32_t
 last_ptr_index(Nit_vec *vec)
 {
 	return (vec->size - sizeof(void *)) / sizeof(void *);
@@ -147,7 +148,7 @@ vec_get_last_ptr(Nit_vec *vec)
 }
 
 int
-vec_remove(Nit_vec *vec, size_t num, size_t size)
+vec_remove(Nit_vec *vec, uint32_t num, uint32_t size)
 {
 	char *end = vec_get(vec, num, size);
 
@@ -158,7 +159,7 @@ vec_remove(Nit_vec *vec, size_t num, size_t size)
 }
 
 int
-vec_remove_ptr(Nit_vec *vec, size_t num)
+vec_remove_ptr(Nit_vec *vec, uint32_t num)
 {
 	return vec_remove(vec, num, sizeof(void *));
 }

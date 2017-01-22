@@ -22,10 +22,10 @@
 #define NIT_SHORT_NAMES
 #include "macros.h"
 #include "palloc.h"
-#include "list.h"
+#include "vec.h"
 #include "hset.h"
 
-#define BIN_MAX_DENSITY 5
+#define BIN_MAX_DENSITY 4
 #define H_SEED 37
 
 static const int bin_num[] = {
@@ -111,28 +111,32 @@ compare(const Nit_hentry *entry , const void *dat, uint32_t key_size)
 	return !memcmp(entry->dat, dat, key_size);
 }
 
-Nit_hentry *
-hentry_new(void *dat, uint32_t key_size)
+void
+hentry_init(Nit_hentry *entry, void *dat, uint32_t key_size)
 {
-	Nit_hentry *entry = palloc(entry);
-
-	pcheck(entry, NULL);
-	entry->dat = dat;
 	entry->key_size = key_size;
 	entry->hash = murmur3_32(dat, key_size, H_SEED);
-        LIST_CONS(entry, NULL);
-
-	return entry;
+	entry->dat = dat;
 }
 
 int
 nit_hset_init(Nit_hset *set, unsigned int sequence)
 {
+	int i = 0;
+	Nit_vec *bin;
+	size_t bin_start =  !sequence ? 0 :
+		bin_num[sequence - 1] * 5 / bin_num[sequence];
+
 	set->bin_pos = sequence;
 	set->entry_num = 0;
 
-	if (!(set->bins = calloc(bin_num[sequence], sizeof(*set->bins))))
+	if (!(set->bins = malloc(sizeof(*set->bins) * bin_num[sequence])))
 		return 0;
+
+	bin = set->bins;
+
+	for (; i != bin_num[sequence]; ++i, ++bin)
+		vec_init(bin, bin_start * sizeof(Nit_hentry));
 
 	return 1;
 }
@@ -140,16 +144,15 @@ nit_hset_init(Nit_hset *set, unsigned int sequence)
 void
 nit_hset_release(Nit_hset *set, Nit_set_free dat_free)
 {
-	Nit_hentry *entry;
+	Nit_vec *bin = set->bins;
 	int i;
+	Nit_hentry *entry;
 
-	for (i = 0; i != bin_num[set->bin_pos]; ++i) {
-	        entry = set->bins[i];
+	for (i = 0; i != bin_num[set->bin_pos]; ++i, ++bin) {
+		vec_foreach(bin, entry, Nit_hentry)
+			dat_free(entry->dat);
 
-	        delayed_foreach (entry) {
-		        dat_free(entry->dat);
-			free(entry);
-		}
+		vec_dispose(bin);
 	}
 
 	free(set->bins);
@@ -178,69 +181,39 @@ hset_free(Nit_hset *set, Nit_set_free dat_free)
 }
 
 static int
-row_num(const void *key, uint32_t key_size, int num)
+row_num(const Nit_hentry *entry, int num)
 {
-	return murmur3_32(key, key_size, H_SEED) % num;
-}
-
-Nit_hentry **
-hset_entry(Nit_hset *set, void *key, uint32_t key_size)
-{
-	Nit_hentry *entry;
-        uint32_t row;
-
-	row = row_num(key, key_size, bin_num[set->bin_pos]);
-	entry = set->bins[row];
-
-	if (!entry || compare(entry, key, key_size))
-		return &set->bins[row];
-
-        foreach (entry) {
-		Nit_hentry *next = LIST_NEXT(entry);
-
-		if (!next || compare(next, key, key_size))
-			break;
-	}
-
-	return NEXT_REF(entry);
+	return entry->hash % num;
 }
 
 int
-hset_add_reduce(Nit_hset *set)
+hset_rehash_maybe(Nit_hset *set)
 {
 	if (++set->entry_num / bin_num[set->bin_pos] >= BIN_MAX_DENSITY)
 		return hset_rehash(set);
 
-	return 0;
+	return 1;
 }
 
-int
-hset_add_unique(Nit_hset *set, void *dat, uint32_t key_size)
+static int
+vec_push_entry(Nit_vec *vec, Nit_hentry *entry)
 {
-	Nit_hentry **entry = hset_entry(set, dat, key_size);
-
-	if (*entry)
-		return 0;
-
-	pcheck(*entry = hentry_new(dat, key_size), -1);
-
-	if (unlikely(hset_add_reduce(set)))
-		return -1;
-
-	return 1;
+	return vec_push(vec, entry, sizeof(*entry));
 }
 
 int
 hset_add(Nit_hset *set, void *dat, uint32_t key_size)
 {
-	Nit_hentry *entry = hentry_new(dat, key_size);
-	Nit_hentry **bin;
+	Nit_hentry entry;
+	Nit_vec *vec;
 
-	pcheck(entry, 0);
-	bin = set->bins + (entry->hash % bin_num[set->bin_pos])
-	LIST_CONS(entry, *bin);
-        *bin = entry;
-	return 1;
+	hentry_init(&entry, dat, key_size);
+	vec = set->bins + row_num(&entry, bin_num[set->bin_pos]);
+
+	if (!vec_push_entry(vec, &entry))
+		return 0;
+
+        return hset_rehash_maybe(set);
 }
 
 int
@@ -249,56 +222,58 @@ nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size)
 	void *new_dat = malloc(key_size);
 
 	if (!new_dat)
-		return -1;
+		return 0;
 
 	memcpy(new_dat, dat, key_size);
 
 	return hset_add(set, new_dat, key_size);
 }
 
-void *
-hset_remove(Nit_hset *set, const void *dat, uint32_t key_size)
-{
-        uint32_t row = row_num(dat, key_size, bin_num[set->bin_pos]);
-	Nit_hentry *entry = set->bins[row];
-	Nit_hentry *prev;
-	void *ret;
+/* void * */
+/* hset_remove(Nit_hset *set, const void *dat, uint32_t key_size) */
+/* { */
+/* 	unsigned int row = row_num(dat, key_size, bin_num[set->bin_pos]); */
+/* 	Nit_hentry *entry = set->bins[row].first; */
+/* 	Nit_hentry *prev; */
+/* 	void *ret; */
 
-	if (!entry)
-		return NULL;
+/* 	if (!entry) */
+/* 		return NULL; */
 
-	if (compare(entry, dat, key_size)) {
-		set->bins[row] = LIST_NEXT(entry);
-	        ret = entry->dat;
-		free(entry);
-		--set->entry_num;
-		return ret;
-	}
+/* 	if (compare(entry, dat, key_size)) { */
+/* 		set->bins[row].first = LIST_NEXT(entry); */
+/* 	        ret = entry->dat; */
+/* 		free(entry); */
+/* 		--set->entry_num; */
+/* 		return ret; */
+/* 	} */
 
-        prev = entry;
-	entry = LIST_NEXT(entry);
+/*         prev = entry; */
+/* 	entry = LIST_NEXT(entry); */
 
-	foreach (entry) {
-		if (compare(entry, dat, key_size)) {
-		        LIST_CONS(prev, LIST_NEXT(entry));
-		        ret = entry->dat;
-			free(entry);
-			--set->entry_num;
-			return ret;
-		}
-		prev = entry;
-	}
+/* 	foreach (entry) { */
+/* 		if (compare(entry, dat, key_size)) { */
+/* 		        LIST_CONS(prev, LIST_NEXT(entry)); */
+/* 		        ret = entry->dat; */
+/* 			free(entry); */
+/* 			--set->entry_num; */
+/* 			return ret; */
+/* 		} */
+/* 		prev = entry; */
+/* 	} */
 
-	return NULL;
-}
+/* 	return NULL; */
+/* } */
 
 void *
 hset_get(const Nit_hset *set, const void *dat, uint32_t key_size)
 {
-        uint32_t row = row_num(dat, key_size, bin_num[set->bin_pos]);
-	const Nit_hentry *entry = set->bins[row];
+	uint32_t row = murmur3_32(dat, key_size, H_SEED) %
+		bin_num[set->bin_pos];
+        Nit_vec *vec = set->bins + row;
+	Nit_hentry *entry;
 
-        foreach (entry)
+        vec_foreach (vec, entry, Nit_hentry)
 		if (compare(entry, dat, key_size))
 			return entry->dat;
 
@@ -314,63 +289,52 @@ hset_contains(const Nit_hset *set, const void *dat, uint32_t key_size)
 int
 hset_subset(const Nit_hset *super, const Nit_hset *sub)
 {
+	Nit_vec *bin = sub->bins;
 	int i;
+	Nit_hentry *entry;
+
 
 	if (sub->entry_num > super->entry_num)
 		return 0;
 
-	for (i = 0; i != bin_num[sub->bin_pos]; ++i) {
-		Nit_hentry *entry = sub->bins[i];
-
-	        foreach (entry)
+	for (i = 0; i != bin_num[sub->bin_pos]; ++i, ++bin)
+	        vec_foreach (bin, entry, Nit_hentry)
 			if (!hset_contains(super, entry->dat, entry->key_size))
 				return 0;
-	}
 
 	return 1;
-}
-
-/* Adds to a bin something already in the hset during a reh */
-static void
-rehash_add(Nit_hentry **bin, Nit_hentry *entry)
-{
-	Nit_hentry *tmp = *bin;
-
-        LIST_CONS(entry, NULL);
-
-	if (!tmp) {
-		*bin = entry;
-		return;
-	}
-
-	/* Finds end of list */
-	while (LIST_NEXT(tmp))
-		tmp = LIST_NEXT(tmp);
-
-        LIST_CONS(tmp, entry);
 }
 
 int
 hset_rehash(Nit_hset *set)
 {
 	int i;
+	Nit_vec *bin = set->bins;
 	int new_bin_num = bin_num[set->bin_pos + 1];
-	Nit_hentry **new_bins = palloc_a(new_bins, new_bin_num);
+        Nit_vec *new_bins = palloc_a(new_bins, new_bin_num);
+	size_t bin_start = bin_num[set->bin_pos] * 4 / new_bin_num;
+	Nit_hentry *entry;
 
 	pcheck(new_bins, 0);
 
 	for (i = 0; i != new_bin_num; ++i)
-		new_bins[i] = NULL;
+	        vec_init(new_bins + i, bin_start * sizeof(Nit_hentry));
 
-	for (i = 0; i != bin_num[set->bin_pos]; ++i) {
-		Nit_hentry *entry = set->bins[i];
+	for (i = 0; i != bin_num[set->bin_pos]; ++i, ++bin) {
+		vec_foreach (bin, entry, Nit_hentry) {
+			uint32_t row = row_num(entry, new_bin_num);
 
-	        foreach (entry) {
-			uint32_t row = entry->hash % new_bin_num;
+			if (!vec_push_entry(new_bins + row, entry)) {
+				for (i = 0; i != new_bin_num; ++i)
+					vec_dispose(new_bins + i);
 
-			rehash_add(new_bins + row, entry);
+				return 0;
+			}
 		}
 	}
+
+	for (i = 0; i != bin_num[set->bin_pos]; ++i)
+		vec_dispose(set->bins + i);
 
 	free(set->bins);
 	set->bins = new_bins;
@@ -379,49 +343,49 @@ hset_rehash(Nit_hset *set)
 	return 1;
 }
 
-static void
-iter_next_nonempty_bin(Nit_hset_iter *iter)
-{
-	for (; iter->bin_num < iter->bin_last - 1; ++iter->bin_num)
-		if (iter->bins[iter->bin_num])
-			break;
+/* static void */
+/* iter_next_nonempty_bin(Nit_hset_iter *iter) */
+/* { */
+/* 	for (; iter->bin_num < iter->bin_last - 1; ++iter->bin_num) */
+/* 		if (iter->bins[iter->bin_num].size) */
+/* 			break; */
 
-	iter->entry = iter->bins[iter->bin_num];
-}
+/* 	iter->entry = (Nit_hentry *) iter->bins[iter->bin_num].dat; */
+/* } */
 
-void
-nit_hset_iter_init(Nit_hset_iter *iter, Nit_hset *set)
-{
-	iter->bin_num = 0;
-	iter->bin_last = bin_num[set->bin_pos];
-	iter->bins = set->bins;
-	iter_next_nonempty_bin(iter);
-}
+/* void */
+/* nit_hset_iter_init(Nit_hset_iter *iter, Nit_hset *set) */
+/* { */
+/* 	iter->bin_num = 0; */
+/* 	iter->bin_last = bin_num[set->bin_pos]; */
+/* 	iter->bins = set->bins; */
+/* 	iter_next_nonempty_bin(iter); */
+/* } */
 
-void *
-nit_hset_iter_dat(Nit_hset_iter *iter)
-{
-	if (!iter->entry)
-		return NULL;
+/* void * */
+/* nit_hset_iter_dat(Nit_hset_iter *iter) */
+/* { */
+/* 	if (!iter->entry) */
+/* 		return NULL; */
 
-	return iter->entry->dat;
-}
+/* 	return iter->entry->dat; */
+/* } */
 
-int
-nit_hset_iter_next(Nit_hset_iter *iter)
-{
-	if (!iter->entry)
-		return 0;
+/* int */
+/* nit_hset_iter_next(Nit_hset_iter *iter) */
+/* { */
+/* 	if (!iter->entry) */
+/* 		return 0; */
 
-	if (!LIST_INC(iter->entry)) {
-		if (++iter->bin_num >= iter->bin_last)
-			return 0;
+/* 	if (!LIST_INC(iter->entry)) { */
+/* 		if (++iter->bin_num >= iter->bin_last) */
+/* 			return 0; */
 
-		iter_next_nonempty_bin(iter);
+/* 		iter_next_nonempty_bin(iter); */
 
-		if (!iter->entry)
-			return 0;
-	}
+/* 		if (!iter->entry) */
+/* 			return 0; */
+/* 	} */
 
-	return 1;
-}
+/* 	return 1; */
+/* } */

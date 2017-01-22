@@ -25,129 +25,49 @@ typedef struct {
 
 #define NIT_LIST(LIST)				\
 	((Nit_list *) (LIST))
+
 #define NIT_LIST_NEXT(LIST)			\
 	((typeof(LIST)) (NIT_LIST(LIST)->next))
+
 #define NIT_LIST_INC(LIST)			\
 	(LIST = NIT_LIST_NEXT(LIST))
+
 #define NIT_LIST_CONS(LIST, END)		\
 	(NIT_LIST(LIST)->next = (END))
+
 #define NIT_NEXT_REF(LIST)			\
 	((typeof(LIST) *) &NIT_LIST(LIST)->next)
+
 #define nit_foreach(LIST)			\
 	for (; LIST; LIST = NIT_LIST_NEXT(LIST))
-#define nit_delayed_foreach(TMP, LIST)					\
-	for (TMP = LIST, LIST ? NIT_LIST_INC(LIST) : NULL;		\
-	     TMP;							\
-	     TMP = LIST, LIST ? NIT_LIST_INC(LIST) : NULL)
+
+#define nit_delayed_foreach(LIST)					\
+	typeof(LIST) TMP = LIST ? LIST_NEXT(LIST) : NULL;		\
+	for (; LIST;							\
+	     LIST = TMP, TMP = TMP ? LIST_NEXT(TMP) : NULL)
 
 #define NIT_DLIST(LIST)				\
 	((Nit_dlist *) LIST)
+
 #define NIT_DLIST_PREV(LIST)			\
 	((typeof(LIST)) (NIT_DLIST(LIST)->prev))
+
 #define NIT_DLIST_DEC(LIST)			\
 	(LIST = NIT_DLIST_PREV(LIST))
+
 #define NIT_DLIST_RCONS(LIST, BEGIN)		\
 	(NIT_DLIST(LIST)->prev = (BEGIN))
+
 #define NIT_PREV_REF(LIST)				\
 	((typeof(LIST) *) &NIT_DLIST(LIST)->prev)
+
 #define nit_preveach(LIST)				\
 	for (; LIST; LIST = NIT_DLIST_PREV(LIST))
-#define nit_delayed_preveach(TMP, LIST)					\
-	for (TMP = LIST, LIST ? NIT_DLIST_DEC(LIST) : NULL;	\
-	     TMP;							\
-	     TMP = LIST, LIST ? NIT_DLIST_DEC(LIST) : NULL)
 
-static inline void
-nit_dlist_connect(void *first, void *next)
-{
-	NIT_LIST_CONS(first, next);
-
-	if (next)
-		NIT_DLIST_RCONS(next, first);
-}
-
-static inline void
-nit_dlist_rconnect(void *last, void *prev)
-{
-	NIT_DLIST_RCONS(last, prev);
-
-	if (prev)
-		NIT_LIST_CONS(prev, last);
-}
-
-static inline void
-nit_dlist_remove(void *list)
-{
-	/*             +----+
-	 *             |list|
-	 *             +----+
-	 *
-	 * +----------+ ---> +----------+
-	 * |list->prev|      |list->next|
-	 * +----------+ <--- +----------+
-	 */
-	if (NIT_DLIST_PREV(list))
-		NIT_LIST_CONS(NIT_DLIST_PREV(list), NIT_LIST_NEXT(list));
-
-	if (NIT_LIST_NEXT(list))
-		NIT_DLIST_RCONS(NIT_LIST_NEXT(list), NIT_DLIST_PREV(list));
-}
-
-static inline void
-nit_dlist_put_after(void *next, void *first)
-{
-	/*  +-----+ ---> +----+
-	 *  |first|      |next|
-	 *  +-----+ <--- +----+
-	 */
-
-	NIT_DLIST_RCONS(next, first);
-	NIT_LIST_CONS(next, NIT_LIST_NEXT(first));
-	NIT_LIST_CONS(first, next);
-
-	/* +----+      +----------+
-	 * |next| <--- |next->next|
-	 * +----+      +----------+
-	 */
-
-	if (NIT_LIST_NEXT(next))
-		NIT_DLIST_RCONS(NIT_LIST_NEXT(next), next);
-}
-
-static inline void
-nit_dlist_put_before(void *first, void *next)
-{
-	/* +----------+      +-----+
-	 * |next->prev| ---> |first|
-	 * +----------+      +-----+
-	 */
-
-	if (NIT_DLIST_PREV(next))
-		NIT_LIST_CONS(NIT_DLIST_PREV(next), next);
-
-	/*  +-----+ ---> +----+
-	 *  |first|      |next|
-	 *  +-----+ <--- +----+
-	 */
-
-	NIT_LIST_CONS(first, next);
-	NIT_DLIST_RCONS(first, NIT_DLIST_PREV(next));
-	NIT_DLIST_RCONS(next, first);
-}
-
-static inline void
-nit_dlist_move_a(void *next, void *first)
-{
-	nit_dlist_remove(next);
-	nit_dlist_put_after(next, first);
-}
-
-static inline void
-nit_dlist_move_b(void *first, void *next)
-{
-	nit_dlist_remove(first);
-	nit_dlist_put_before(first, next);
-}
+#define nit_delayed_preveach(LIST)					\
+	typeof(LIST) TMP = LIST ? LIST_PREV(LIST) : NULL;		\
+	for (; LIST;							\
+	     LIST = TMP, TMP = TMP ? LIST_PREV(TMP) : NULL)
 
 #if defined NIT_SHORT_NAMES || defined NIT_LIST_SHORT_NAMES
 # define LIST_NEXT(...)        NIT_LIST_NEXT(__VA_ARGS__)
@@ -162,10 +82,4 @@ nit_dlist_move_b(void *first, void *next)
 # define PREV_REF(...)         NIT_PREV_REF(__VA_ARGS__)
 # define preveach(...)         nit_preveach(__VA_ARGS__)
 # define delayed_preveach(...) nit_delayed_preveach(__VA_ARGS__)
-# define dlist_connect(...)    nit_dlist_connect(__VA_ARGS__)
-# define dlist_rconnect(...)   nit_dlist_rconnect(__VA_ARGS__)
-# define dlist_put_after(...)  nit_dlist_put_after(__VA_ARGS__)
-# define dlist_remove(...)     nit_dlist_remove(__VA_ARGS__)
-# define dlist_move_a(...)     nit_dlist_move_a(__VA_ARGS__)
-# define dlist_move_b(...)     nit_dlist_move_b(__VA_ARGS__)
 #endif

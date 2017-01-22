@@ -9,12 +9,13 @@
 #define NIT_SHORT_NAMES
 #include "../macros.h"
 #include "../list.h"
+#include "../vec.h"
+#include "../lvec.h"
 #include "../hset.h"
 #include "../hmap.h"
 #include "../gap-buf.h"
 /* #include "../gc.h" */
 #include "../radix.h"
-#include "../vec.h"
 
 static void
 hmap_free_contents(void *key, void *storage)
@@ -26,7 +27,7 @@ static MunitResult
 test_hmap(const MunitParameter params[], void* data)
 {
 	Nit_hmap_iter iter;
-	Nit_hmap *map = hmap_new(2);
+	Nit_hmap *map = hmap_new(6);
 	int i = 0;
 
 	(void) params;
@@ -240,6 +241,34 @@ test_vec(const MunitParameter params[], void* data)
 	return MUNIT_OK;
 }
 
+static MunitResult
+test_lvec(const MunitParameter params[], void* data)
+{
+	Nit_lvec *lvec = lvec_new(0);
+	char *str = "hello, world!\n";
+	char *str2 = "cat";
+	char *str3 = "dog";
+
+	lvec_push_ptr(lvec, str);
+
+        munit_assert_ptr_equal(str, lvec_get_last_ptr(lvec));
+
+	lvec_push_ptr(lvec, str3);
+	lvec_insert_ptr(lvec, str2, 1);
+
+        munit_assert_ptr_equal(str3, lvec_get_last_ptr(lvec));
+
+	lvec_remove_ptr(lvec, 2);
+
+        munit_assert_ptr_equal(str2, lvec_get_last_ptr(lvec));
+
+	munit_assert_ptr_equal(str2, lvec_pop_ptr(lvec));
+	munit_assert_ptr_equal(str, lvec_pop_ptr(lvec));
+
+	lvec_free(lvec);
+	return MUNIT_OK;
+}
+
 static MunitTest test_suite_tests[] = {
 	{ (char *) "/hmap", test_hmap,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
@@ -248,6 +277,8 @@ static MunitTest test_suite_tests[] = {
 	{ (char *) "/radix", test_radix,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ (char *) "/vec", test_vec,
+	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
+		{ (char *) "/lvec", test_lvec,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
 

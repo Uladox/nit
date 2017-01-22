@@ -22,25 +22,26 @@
 #define NIT_SHORT_NAMES
 #include "macros.h"
 #include "palloc.h"
-#include "list.h"
+#include "vec.h"
 #include "hset.h"
 #include "hmap.h"
 
 void
 nit_hmap_free(Nit_hmap *map, Nit_map_free dat_free)
 {
+	Nit_vec *bin = map->bins;
 	int bin_num = hset_bin_num(map);
 	int i;
+	Nit_hentry *entry;
 
-	for (i = 0; i != bin_num; ++i) {
-		Nit_hentry *entry = map->bins[i];
-
-		delayed_foreach (entry) {
-		        dat_free(entry->dat,
+	for (i = 0; i != bin_num; ++i, ++bin) {
+		vec_foreach (bin, entry, Nit_hentry) {
+			dat_free(entry->dat,
 				 hmap_storage(entry->dat, entry->key_size));
 			free(entry->dat);
-			free(entry);
 		}
+
+		vec_dispose(bin);
 	}
 
 	free(map->bins);
@@ -72,18 +73,18 @@ nit_hmap_add(Nit_hmap *map, void *key, uint32_t key_size, void *storage)
 	return nit_hset_add(map, dat, key_size);
 }
 
-void *
-nit_hmap_remove(Nit_hmap *map, void *key, uint32_t key_size)
-{
-	void *dat = nit_hset_remove(map, key, key_size);
-	void *storage;
+/* void * */
+/* nit_hmap_remove(Nit_hmap *map, void *key, uint32_t key_size) */
+/* { */
+/* 	void *dat = nit_hset_remove(map, key, key_size); */
+/* 	void *storage; */
 
-	if (!dat)
-		return NULL;
+/* 	if (!dat) */
+/* 		return NULL; */
 
-	storage = hmap_storage(dat, key_size);
-	free(dat);
+/* 	storage = hmap_storage(dat, key_size); */
+/* 	free(dat); */
 
-	return storage;
-}
+/* 	return storage; */
+/* } */
 
