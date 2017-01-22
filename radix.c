@@ -65,11 +65,40 @@ radix_init(Nit_radix *radix, void *dat)
 	radix->map.entry_num = -1;
 }
 
-/* void */
-/* nit_radix_release(Nit_radix *radix) */
-/* { */
-	
-/* } */
+#include <stdio.h>
+
+static void
+redge_free(void *key, void *redge_arg, void *dat_free)
+{
+	(void) key;
+	Nit_redge *redge = redge_arg;
+
+	printf("%c\n", *(char *) key);
+	printf("%.*s\n", (int) redge->len, redge->str);
+
+	if (redge->radix)
+		radix_free(redge->radix,
+			   *(Nit_radix_free *) dat_free);
+
+	free(redge);
+}
+
+void
+radix_dispose(Nit_radix *radix, Nit_radix_free dat_free)
+{
+	if (dat_free && radix->dat)
+		dat_free(radix->dat);
+
+	if (!radix_emp(radix))
+		hmap_dispose(&radix->map, redge_free, &dat_free);
+}
+
+void
+radix_free(Nit_radix *radix, Nit_radix_free dat_free)
+{
+	radix_dispose(radix, dat_free);
+	free(radix);
+}
 
 Nit_radix *
 radix_new(void *dat)
@@ -145,13 +174,14 @@ radix_insert(Nit_radix *radix, const void *key, size_t len, void *dat)
 	Nit_redge *e;
 	Nit_redge **er;
 	const char *str = key;
-	Nit_radix *new_radix = radix_new(dat);
 
 	for (; *str;
 	     e = *er, str += e->len, len -= e->len, radix = e->radix) {
 		if (!(er = radix_get_ref(radix, *str))) {
+			Nit_radix *new_radix = radix_new(dat);
 			char c = *str++;
 
+			pcheck(new_radix, 0);
 			--len;
 			pcheck(e = redge_new(new_radix, str, len), 0);
 			return radix_add(radix, c, e);

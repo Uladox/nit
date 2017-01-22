@@ -9,13 +9,14 @@
 typedef struct nit_radix Nit_radix;
 typedef struct nit_redge Nit_redge;
 
+typedef void(*Nit_radix_free)(void *dat);
+
 struct nit_radix {
 	void *dat;
 	Nit_hmap map;
 };
 
 struct nit_redge {
-	Nit_radix *root;
 	Nit_radix *radix;
 	size_t len;
 	char str[];
@@ -51,7 +52,10 @@ void
 nit_radix_init(Nit_radix *radix, void *dat);
 
 void
-nit_radix_release(Nit_radix *radix);
+nit_radix_dispose(Nit_radix *radix, Nit_radix_free dat_free);
+
+void
+nit_radix_free(Nit_radix *radix, Nit_radix_free dat_free);
 
 Nit_radix *
 nit_radix_new(void *dat);
@@ -83,6 +87,8 @@ nit_radix_iter_get(Nit_radix_iter *iter);
 # define radix_add(...)       nit_radix_add(__VA_ARGS__)
 # define radix_lookup(...)    nit_radix_lookup(__VA_ARGS__)
 # define radix_init(...)      nit_radix_init(__VA_ARGS__)
+# define radix_dispose(...)   nit_radix_dispose(__VA_ARGS__)
+# define radix_free(...)      nit_radix_free(__VA_ARGS__)
 # define radix_new(...)       nit_radix_new(__VA_ARGS__)
 # define redge_new(...)       nit_redge_new(__VA_ARGS__)
 # define redge_split(...)     nit_redge_split(__VA_ARGS__)

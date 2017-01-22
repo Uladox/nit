@@ -27,7 +27,7 @@
 #include "hmap.h"
 
 void
-nit_hmap_free(Nit_hmap *map, Nit_map_free dat_free)
+nit_hmap_dispose(Nit_hmap *map, Nit_map_free dat_free, void *extra)
 {
 	int bin_num = hset_bin_num(map);
 	int i;
@@ -37,13 +37,20 @@ nit_hmap_free(Nit_hmap *map, Nit_map_free dat_free)
 
 		delayed_foreach (entry) {
 		        dat_free(entry->dat,
-				 hmap_storage(entry->dat, entry->key_size));
+				 hmap_storage(entry->dat, entry->key_size),
+				 extra);
 			free(entry->dat);
 			free(entry);
 		}
 	}
 
 	free(map->bins);
+}
+
+void
+nit_hmap_free(Nit_hmap *map, Nit_map_free dat_free, void *extra)
+{
+	hmap_dispose(map, dat_free, extra);
 	free(map);
 }
 

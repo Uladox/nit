@@ -138,7 +138,7 @@ nit_hset_init(Nit_hset *set, unsigned int sequence)
 }
 
 void
-nit_hset_release(Nit_hset *set, Nit_set_free dat_free)
+nit_hset_dispose(Nit_hset *set, Nit_set_free dat_free, void *extra)
 {
 	Nit_hentry *entry;
 	int i;
@@ -147,7 +147,7 @@ nit_hset_release(Nit_hset *set, Nit_set_free dat_free)
 	        entry = set->bins[i];
 
 	        delayed_foreach (entry) {
-		        dat_free(entry->dat);
+		        dat_free(entry->dat, extra);
 			free(entry);
 		}
 	}
@@ -171,9 +171,9 @@ hset_new(unsigned int sequence)
 }
 
 void
-hset_free(Nit_hset *set, Nit_set_free dat_free)
+hset_free(Nit_hset *set, Nit_set_free dat_free, void *extra)
 {
-	nit_hset_release(set, dat_free);
+	nit_hset_dispose(set, dat_free, extra);
 	free(set);
 }
 
@@ -331,24 +331,24 @@ hset_subset(const Nit_hset *super, const Nit_hset *sub)
 }
 
 /* Adds to a bin something already in the hset during a reh */
-static void
-rehash_add(Nit_hentry **bin, Nit_hentry *entry)
-{
-	Nit_hentry *tmp = *bin;
+/* static void */
+/* rehash_add(Nit_hentry **bin, Nit_hentry *entry) */
+/* { */
+/* 	Nit_hentry *tmp = *bin; */
 
-        LIST_CONS(entry, NULL);
+/*         LIST_CONS(entry, NULL); */
 
-	if (!tmp) {
-		*bin = entry;
-		return;
-	}
+/* 	if (!tmp) { */
+/* 		*bin = entry; */
+/* 		return; */
+/* 	} */
 
-	/* Finds end of list */
-	while (LIST_NEXT(tmp))
-		tmp = LIST_NEXT(tmp);
+/* 	/\* Finds end of list *\/ */
+/* 	while (LIST_NEXT(tmp)) */
+/* 		tmp = LIST_NEXT(tmp); */
 
-        LIST_CONS(tmp, entry);
-}
+/*         LIST_CONS(tmp, entry); */
+/* } */
 
 int
 hset_rehash(Nit_hset *set)
@@ -365,10 +365,12 @@ hset_rehash(Nit_hset *set)
 	for (i = 0; i != bin_num[set->bin_pos]; ++i) {
 		Nit_hentry *entry = set->bins[i];
 
-	        foreach (entry) {
+	        delayed_foreach (entry) {
 			uint32_t row = entry->hash % new_bin_num;
+			Nit_hentry **bin = new_bins + row;
 
-			rehash_add(new_bins + row, entry);
+			LIST_CONS(entry, *bin);
+			*bin = entry;
 		}
 	}
 

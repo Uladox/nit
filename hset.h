@@ -26,7 +26,7 @@ typedef struct nit_hentry {
 	uint32_t hash;
 } Nit_hentry;
 
-typedef void(*Nit_set_free)(void *dat);
+typedef void(*Nit_set_free)(void *dat, void *extra);
 typedef struct nit_hset Nit_hset;
 
 struct nit_hset {
@@ -54,13 +54,13 @@ int
 nit_hset_init(Nit_hset *set, unsigned int sequence);
 
 void
-nit_hset_release(Nit_hset *set, Nit_set_free dat_free);
+nit_hset_dispose(Nit_hset *set, Nit_set_free dat_free, void *extra);
 
 Nit_hset *
 nit_hset_new(unsigned int sequence);
 
 void
-nit_hset_free(Nit_hset *set, Nit_set_free dat_free);
+nit_hset_free(Nit_hset *set, Nit_set_free dat_free, void *extra);
 
 Nit_hentry **
 nit_hset_entry(Nit_hset *set, void *dat, uint32_t key_size);
@@ -106,7 +106,7 @@ nit_hset_iter_next(Nit_hset_iter *iter);
 # define hset_bin_num(...)    nit_hset_bin_num(__VA_ARGS__)
 # define hentry_new(...)      nit_hentry_new(__VA_ARGS__)
 # define hset_init(...)       nit_hset_init(__VA_ARGS__)
-# define hset_release(...)    nit_hset_release(__VA_ARGS__)
+# define hset_dispose(...)    nit_hset_dispose(__VA_ARGS__)
 # define hset_new(...)        nit_hset_new(__VA_ARGS__)
 # define hset_free(...)       nit_hset_free(__VA_ARGS__)
 # define hset_entry(...)      nit_hset_entry(__VA_ARGS__)

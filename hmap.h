@@ -22,7 +22,7 @@
 
 typedef Nit_hset Nit_hmap;
 typedef Nit_hset_iter Nit_hmap_iter;
-typedef void(*Nit_map_free)(void *key, void *storage);
+typedef void(*Nit_map_free)(void *key, void *storage, void *extra);
 
 static inline void **
 nit_hmap_storage_ref(void *dat, uint32_t key_size)
@@ -42,11 +42,8 @@ nit_hmap_init(Nit_hmap *map, unsigned int sequence)
 	return nit_hset_init(map, sequence);
 }
 
-static inline void
-nit_hmap_release(Nit_hmap *map, Nit_set_free dat_free)
-{
-	nit_hset_release(map, dat_free);
-}
+void
+nit_hmap_dispose(Nit_hmap *map, Nit_map_free dat_free, void *extra);
 
 static inline Nit_hmap *
 nit_hmap_new(unsigned int sequence)
@@ -55,7 +52,7 @@ nit_hmap_new(unsigned int sequence)
 }
 
 void
-nit_hmap_free(Nit_hmap *hmap, Nit_map_free dat_free);
+nit_hmap_free(Nit_hmap *hmap, Nit_map_free dat_free, void *extra);
 
 void *
 nit_hmap_dat_new(void *key, uint32_t key_size, void *storage);
@@ -133,7 +130,7 @@ nit_hmap_iter_next(Nit_hmap_iter *iter)
 # define hmap_storage_ref(...) nit_hmap_storage_ref(__VA_ARGS__)
 # define hmap_storage(...)     nit_hmap_storage(__VA_ARGS__)
 # define hmap_init(...)        nit_hmap_init(__VA_ARGS__)
-# define hmap_release(...)     nit_hmap_release(__VA_ARGS__)
+# define hmap_dispose(...)     nit_hmap_dispose(__VA_ARGS__)
 # define hmap_new(...)         nit_hmap_new(__VA_ARGS__)
 # define hmap_free(...)        nit_hmap_free(__VA_ARGS__)
 # define hmap_dat_new(...)     nit_hmap_dat_new(__VA_ARGS__)
