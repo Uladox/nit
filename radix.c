@@ -65,16 +65,11 @@ radix_init(Nit_radix *radix, void *dat)
 	radix->map.entry_num = -1;
 }
 
-#include <stdio.h>
-
 static void
 redge_free(void *key, void *redge_arg, void *dat_free)
 {
 	(void) key;
 	Nit_redge *redge = redge_arg;
-
-	printf("%c\n", *(char *) key);
-	printf("%.*s\n", (int) redge->len, redge->str);
 
 	if (redge->radix)
 		radix_free(redge->radix,
@@ -201,11 +196,10 @@ radix_insert(Nit_radix *radix, const void *key, size_t len, void *dat)
 }
 
 void
-radix_iter_init(Nit_radix_iter *iter, Nit_radix *radix)
+radix_iter_set(Nit_radix_iter *iter, Nit_radix *radix)
 {
 	iter->type = NIT_T_RADIX;
 	iter->pos = 0;
-	iter->root = radix;
 	iter->d.radix = radix;
 }
 

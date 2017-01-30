@@ -42,14 +42,14 @@ typedef struct {
 	for (; LIST; LIST = NIT_LIST_NEXT(LIST))
 
 #define nit_delayed_foreach(LIST)					\
-	typeof(LIST) TMP = LIST ? LIST_NEXT(LIST) : NULL;		\
+	typeof(LIST) TMP = LIST ? NIT_LIST_NEXT(LIST) : NULL;		\
 	for (; LIST;							\
-	     LIST = TMP, TMP = TMP ? LIST_NEXT(TMP) : NULL)
+	     LIST = TMP, TMP = TMP ? NIT_LIST_NEXT(TMP) : NULL)
 
 #define NIT_DLIST(LIST)				\
 	((Nit_dlist *) LIST)
 
-#define NIT_DLIST_PREV(LIST)			\
+#define NIT_DLIST_PREV(LIST)				\
 	((typeof(LIST)) (NIT_DLIST(LIST)->prev))
 
 #define NIT_DLIST_DEC(LIST)			\
@@ -65,9 +65,9 @@ typedef struct {
 	for (; LIST; LIST = NIT_DLIST_PREV(LIST))
 
 #define nit_delayed_preveach(LIST)					\
-	typeof(LIST) TMP = LIST ? LIST_PREV(LIST) : NULL;		\
+	typeof(LIST) TMP = LIST ? NIT_DLIST_PREV(LIST) : NULL;		\
 	for (; LIST;							\
-	     LIST = TMP, TMP = TMP ? LIST_PREV(TMP) : NULL)
+	     LIST = TMP, TMP = TMP ? NIT_DLIST_PREV(TMP) : NULL)
 
 #if defined NIT_SHORT_NAMES || defined NIT_LIST_SHORT_NAMES
 # define LIST_NEXT(...)        NIT_LIST_NEXT(__VA_ARGS__)

@@ -175,40 +175,40 @@ test_radix(const MunitParameter params[], void* data)
 
 	int a[8] = { 233, 2341, 0, 1234, 754, 0, 34, 87 };
 	int b[4] = { 233, 2341, 0, 1234 };
-	radix_iter_init(&iter, radix);
+	radix_iter_set(&iter, radix);
 
 	r_insert_int(radix, "firs",     3);
 	r_insert_int(radix, "first",    1);
-	/* r_insert_int(radix, "second",   2); */
-	/* r_insert_int(radix, "secs",     4); */
-	/* r_insert_int(radix, "secoms",   5); */
-	/* r_insert_int(radix, "a",        6); */
-	/* r_insert_int(radix, "absolute", 7); */
-	/* r_insert_int(radix, "bottle",   8); */
-	/* r_insert_int(radix, "b",        9); */
+	r_insert_int(radix, "second",   2);
+	r_insert_int(radix, "secs",     4);
+	r_insert_int(radix, "secoms",   5);
+	r_insert_int(radix, "a",        6);
+	r_insert_int(radix, "absolute", 7);
+	r_insert_int(radix, "bottle",   8);
+	r_insert_int(radix, "b",        9);
 
-	/* radix_insert(radix, a, sizeof(a), &(int){ 10 }); */
-	/* radix_insert(radix, b, sizeof(b), &(int){ 11 }); */
+	radix_insert(radix, a, sizeof(a), &(int){ 10 });
+	radix_insert(radix, b, sizeof(b), &(int){ 11 });
 
-	/* r_assert_int_lookup(radix, "first",    1); */
-	/* r_assert_int_lookup(radix, "second",   2); */
-	/* r_assert_int_lookup(radix, "secs",     4); */
-	/* r_assert_int_lookup(radix, "secoms",   5); */
-	/* r_assert_int_lookup(radix, "firs",     3); */
-	/* r_assert_int_lookup(radix, "a",        6); */
-	/* r_assert_int_lookup(radix, "absolute", 7); */
-	/* r_assert_int_lookup(radix, "bottle",   8); */
-	/* r_assert_int_lookup(radix, "b",        9); */
+	r_assert_int_lookup(radix, "first",    1);
+	r_assert_int_lookup(radix, "second",   2);
+	r_assert_int_lookup(radix, "secs",     4);
+	r_assert_int_lookup(radix, "secoms",   5);
+	r_assert_int_lookup(radix, "firs",     3);
+	r_assert_int_lookup(radix, "a",        6);
+	r_assert_int_lookup(radix, "absolute", 7);
+	r_assert_int_lookup(radix, "bottle",   8);
+	r_assert_int_lookup(radix, "b",        9);
 
-	/* munit_assert_int(10, ==, *(int *) radix_lookup(radix, a, sizeof(a))); */
-	/* munit_assert_int(11, ==, *(int *) radix_lookup(radix, b, sizeof(b))); */
+	munit_assert_int(10, ==, *(int *) radix_lookup(radix, a, sizeof(a)));
+	munit_assert_int(11, ==, *(int *) radix_lookup(radix, b, sizeof(b)));
 
-	/* radix_iter_move(&iter, "f", 1); */
-	/* radix_iter_move(&iter, "ir", 2); */
-	/* radix_iter_move(&iter, "st", 3); */
+	radix_iter_move(&iter, "f", 1);
+	radix_iter_move(&iter, "ir", 2);
+	radix_iter_move(&iter, "st", 3);
 
-	/* munit_assert_int(1, ==, *(int *) radix_iter_get(&iter)); */
-	/* munit_assert_int(1, ==, radix_iter_move(&iter, "&", 1)); */
+	munit_assert_int(1, ==, *(int *) radix_iter_get(&iter));
+	munit_assert_int(1, ==, radix_iter_move(&iter, "&", 1));
 
 	radix_free(radix, NULL);
 
@@ -319,8 +319,8 @@ main(int argc, char *argv[MUNIT_ARRAY_PARAM(argc + 1)])
 	/* test_hmap(NULL, NULL); */
 	/* test_gap_buf(NULL, NULL); */
 	/* test_gc(NULL, NULL); */
-	test_radix(NULL, NULL);
+	/* test_radix(NULL, NULL); */
 	/* test_vec(NULL, NULL); */
 
-	/* return munit_suite_main(&test_suite, NULL, argc, argv); */
+	return munit_suite_main(&test_suite, NULL, argc, argv);
 }

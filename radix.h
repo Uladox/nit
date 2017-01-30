@@ -28,8 +28,6 @@ typedef struct {
 	int type;
 	int pos;
 
-	Nit_radix *root;
-
 	union {
 		Nit_radix *radix;
 		Nit_redge *redge;
@@ -72,7 +70,7 @@ nit_radix_insert(Nit_radix *radix, const void *key,
 		 size_t key_size, void *dat);
 
 void
-nit_radix_iter_init(Nit_radix_iter *iter, Nit_radix *radix);
+nit_radix_iter_set(Nit_radix_iter *iter, Nit_radix *radix);
 
 /* returns how much has been moved */
 size_t
@@ -93,7 +91,7 @@ nit_radix_iter_get(Nit_radix_iter *iter);
 # define redge_new(...)       nit_redge_new(__VA_ARGS__)
 # define redge_split(...)     nit_redge_split(__VA_ARGS__)
 # define radix_insert(...)    nit_radix_insert(__VA_ARGS__)
-# define radix_iter_init(...) nit_radix_iter_init(__VA_ARGS__)
+# define radix_iter_set(...)  nit_radix_iter_set(__VA_ARGS__)
 # define radix_iter_move(...) nit_radix_iter_move(__VA_ARGS__)
 # define radix_iter_get(...)  nit_radix_iter_get(__VA_ARGS__)
 #endif
