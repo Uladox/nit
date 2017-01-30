@@ -26,50 +26,51 @@ typedef struct {
 #define NIT_LIST(LIST)				\
 	((Nit_list *) (LIST))
 
-#define NIT_LIST_NEXT(LIST)			\
-	((typeof(LIST)) (NIT_LIST(LIST)->next))
+#define NIT_LIST_NEXT(LIST, TYPE)		\
+	((TYPE *) (NIT_LIST(LIST)->next))
 
 #define NIT_LIST_INC(LIST)			\
-	(LIST = NIT_LIST_NEXT(LIST))
+	(LIST = NIT_LIST_NEXT(LIST, void))
 
 #define NIT_LIST_CONS(LIST, END)		\
 	(NIT_LIST(LIST)->next = (END))
 
-#define NIT_NEXT_REF(LIST)			\
-	((typeof(LIST) *) &NIT_LIST(LIST)->next)
+#define NIT_NEXT_REF(LIST, TYPE)		\
+	((TYPE **) &NIT_LIST(LIST)->next)
 
-#define nit_foreach(LIST)			\
-	for (; LIST; LIST = NIT_LIST_NEXT(LIST))
+#define nit_foreach(LIST)				\
+	for (; LIST; LIST = NIT_LIST_NEXT(LIST, void))
 
 #define nit_delayed_foreach(LIST)					\
-	typeof(LIST) TMP = LIST ? NIT_LIST_NEXT(LIST) : NULL;		\
-	for (; LIST;							\
-	     LIST = TMP, TMP = TMP ? NIT_LIST_NEXT(TMP) : NULL)
+	for (void *TMP = LIST ? NIT_LIST_NEXT(LIST, void) : NULL;	\
+	     LIST;							\
+	     LIST = TMP, TMP = TMP ? NIT_LIST_NEXT(TMP, void) : NULL)
 
 #define NIT_DLIST(LIST)				\
 	((Nit_dlist *) LIST)
 
-#define NIT_DLIST_PREV(LIST)				\
-	((typeof(LIST)) (NIT_DLIST(LIST)->prev))
+#define NIT_DLIST_PREV(LIST, TYPE)		\
+	((TYPE *) (NIT_DLIST(LIST)->prev))
 
 #define NIT_DLIST_DEC(LIST)			\
-	(LIST = NIT_DLIST_PREV(LIST))
+	(LIST = NIT_DLIST_PREV(LIST, void))
 
 #define NIT_DLIST_RCONS(LIST, BEGIN)		\
 	(NIT_DLIST(LIST)->prev = (BEGIN))
 
-#define NIT_PREV_REF(LIST)				\
-	((typeof(LIST) *) &NIT_DLIST(LIST)->prev)
+#define NIT_PREV_REF(LIST, TYPE)		\
+	((TYPE **) &NIT_DLIST(LIST)->prev)
 
 #define nit_preveach(LIST)				\
 	for (; LIST; LIST = NIT_DLIST_PREV(LIST))
 
 #define nit_delayed_preveach(LIST)					\
-	typeof(LIST) TMP = LIST ? NIT_DLIST_PREV(LIST) : NULL;		\
-	for (; LIST;							\
-	     LIST = TMP, TMP = TMP ? NIT_DLIST_PREV(TMP) : NULL)
+	for (void *TMP = LIST ? NIT_DLIST_PREV(LIST, void) : NULL;	\
+	     LIST;							\
+	     LIST = TMP, TMP = TMP ? NIT_DLIST_PREV(TMP, void) : NULL)
 
 #if defined NIT_SHORT_NAMES || defined NIT_LIST_SHORT_NAMES
+# define LIST(...)             NIT_LIST(__VA_ARGS__)
 # define LIST_NEXT(...)        NIT_LIST_NEXT(__VA_ARGS__)
 # define LIST_INC(...)         NIT_LIST_INC(__VA_ARGS__)
 # define LIST_CONS(...)        NIT_LIST_CONS(__VA_ARGS__)

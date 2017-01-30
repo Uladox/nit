@@ -196,13 +196,13 @@ hset_entry(Nit_hset *set, void *key, uint32_t key_size)
 		return &set->bins[row];
 
         foreach (entry) {
-		Nit_hentry *next = LIST_NEXT(entry);
+		Nit_hentry *next = LIST_NEXT(entry, void);
 
 		if (!next || compare(next, key, key_size))
 			break;
 	}
 
-	return NEXT_REF(entry);
+	return NEXT_REF(entry, Nit_hentry);
 }
 
 int
@@ -268,7 +268,7 @@ hset_remove(Nit_hset *set, const void *dat, uint32_t key_size)
 		return NULL;
 
 	if (compare(entry, dat, key_size)) {
-		set->bins[row] = LIST_NEXT(entry);
+		set->bins[row] = LIST_NEXT(entry, void);
 	        ret = entry->dat;
 		free(entry);
 		--set->entry_num;
@@ -276,11 +276,11 @@ hset_remove(Nit_hset *set, const void *dat, uint32_t key_size)
 	}
 
         prev = entry;
-	entry = LIST_NEXT(entry);
+	entry = LIST_NEXT(entry, void);
 
 	foreach (entry) {
 		if (compare(entry, dat, key_size)) {
-		        LIST_CONS(prev, LIST_NEXT(entry));
+		        LIST_CONS(prev, LIST_NEXT(entry, void));
 		        ret = entry->dat;
 			free(entry);
 			--set->entry_num;
@@ -329,26 +329,6 @@ hset_subset(const Nit_hset *super, const Nit_hset *sub)
 
 	return 1;
 }
-
-/* Adds to a bin something already in the hset during a reh */
-/* static void */
-/* rehash_add(Nit_hentry **bin, Nit_hentry *entry) */
-/* { */
-/* 	Nit_hentry *tmp = *bin; */
-
-/*         LIST_CONS(entry, NULL); */
-
-/* 	if (!tmp) { */
-/* 		*bin = entry; */
-/* 		return; */
-/* 	} */
-
-/* 	/\* Finds end of list *\/ */
-/* 	while (LIST_NEXT(tmp)) */
-/* 		tmp = LIST_NEXT(tmp); */
-
-/*         LIST_CONS(tmp, entry); */
-/* } */
 
 int
 hset_rehash(Nit_hset *set)
