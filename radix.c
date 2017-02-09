@@ -12,6 +12,11 @@
 #include "hmap.h"
 #include "radix.h"
 
+typedef struct {
+	Nit_radix_free radix_free;
+	Nit_rreuse *reuse;
+} Radix_destruct;
+
 static int
 radix_emp(Nit_radix *radix)
 {
@@ -89,6 +94,19 @@ radix_dispose(Nit_radix *radix, Nit_radix_free dat_free)
 }
 
 void
+radix_dispose_recycle(Nit_radix *radix, Nit_radix_free dat_free,
+		      Nit_rreuse *reuse)
+{
+	
+
+	if (dat_free && radix->dat)
+		dat_free(radix->dat);
+
+	if (!radix_emp(radix))
+		hmap_dispose(&radix->map, redge_free, &dat_free);
+}
+
+void
 radix_free(Nit_radix *radix, Nit_radix_free dat_free)
 {
 	radix_dispose(radix, dat_free);
@@ -96,9 +114,16 @@ radix_free(Nit_radix *radix, Nit_radix_free dat_free)
 }
 
 Nit_radix *
-radix_new(void *dat)
+radix_new(void *dat, Nit_rreuse *reuse)
 {
-	Nit_radix *radix = palloc(radix);
+	Nit_radix *radix;
+
+	if (!reuse->radixs) {
+		radix = palloc(radix);
+	} else {
+		radix = reuse->radixs;
+		reuse->radixs = LIST_NEXT(reuse->radixs, void);
+	}
 
 	pcheck(radix, NULL);
 	radix_init(radix, dat);

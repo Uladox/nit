@@ -112,9 +112,16 @@ compare(const Nit_hentry *entry , const void *dat, uint32_t key_size)
 }
 
 Nit_hentry *
-hentry_new(void *dat, uint32_t key_size)
+hentry_new(void *dat, uint32_t key_size, Nit_hentry **stack)
 {
-	Nit_hentry *entry = palloc(entry);
+	Nit_hentry *entry;
+
+	if (!*stack) {
+		entry = palloc(entry);
+	} else {
+		entry = *stack;
+		*stack = LIST_NEXT(*stack, void);
+	}
 
 	pcheck(entry, NULL);
 	entry->dat = dat;
@@ -155,6 +162,26 @@ nit_hset_dispose(Nit_hset *set, Nit_set_free dat_free, void *extra)
 	free(set->bins);
 }
 
+void
+nit_hset_dispose_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
+			 Nit_hentry **stack)
+{
+	Nit_hentry *entry;
+	int i;
+
+	for (i = 0; i != bin_num[set->bin_pos]; ++i) {
+	        entry = set->bins[i];
+
+	        delayed_foreach (entry) {
+		        dat_free(entry->dat, extra);
+			LIST_CONS(entry, *stack);
+			*stack = entry;
+		}
+	}
+
+	free(set->bins);
+}
+
 Nit_hset *
 hset_new(unsigned int sequence)
 {
@@ -162,7 +189,7 @@ hset_new(unsigned int sequence)
 
 	pcheck(set, NULL);
 
-	if (!nit_hset_init(set, sequence)) {
+	if (!hset_init(set, sequence)) {
 		free(set);
 		return NULL;
 	}
@@ -173,7 +200,15 @@ hset_new(unsigned int sequence)
 void
 hset_free(Nit_hset *set, Nit_set_free dat_free, void *extra)
 {
-	nit_hset_dispose(set, dat_free, extra);
+        hset_dispose(set, dat_free, extra);
+	free(set);
+}
+
+void
+hset_free_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
+		  Nit_hentry **stack)
+{
+        hset_dispose_recycle(set, dat_free, extra, stack);
 	free(set);
 }
 
@@ -215,14 +250,15 @@ hset_add_reduce(Nit_hset *set)
 }
 
 int
-hset_add_unique(Nit_hset *set, void *dat, uint32_t key_size)
+hset_add_unique(Nit_hset *set, void *dat, uint32_t key_size,
+		Nit_hentry **stack)
 {
 	Nit_hentry **entry = hset_entry(set, dat, key_size);
 
 	if (*entry)
 		return 0;
 
-	pcheck(*entry = hentry_new(dat, key_size), -1);
+	pcheck(*entry = hentry_new(dat, key_size, stack), -1);
 
 	if (unlikely(hset_add_reduce(set)))
 		return -1;
@@ -231,9 +267,9 @@ hset_add_unique(Nit_hset *set, void *dat, uint32_t key_size)
 }
 
 int
-hset_add(Nit_hset *set, void *dat, uint32_t key_size)
+hset_add(Nit_hset *set, void *dat, uint32_t key_size, Nit_hentry **stack)
 {
-	Nit_hentry *entry = hentry_new(dat, key_size);
+	Nit_hentry *entry = hentry_new(dat, key_size, stack);
 	Nit_hentry **bin;
 
 	pcheck(entry, 0);
@@ -244,7 +280,8 @@ hset_add(Nit_hset *set, void *dat, uint32_t key_size)
 }
 
 int
-nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size)
+nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size,
+		  Nit_hentry **stack)
 {
 	void *new_dat = malloc(key_size);
 
@@ -253,11 +290,11 @@ nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size)
 
 	memcpy(new_dat, dat, key_size);
 
-	return hset_add(set, new_dat, key_size);
+	return hset_add(set, new_dat, key_size, stack);
 }
 
 void *
-hset_remove(Nit_hset *set, const void *dat, uint32_t key_size)
+hset_remove(Nit_hset *set, const void *dat, uint32_t key_size, Nit_hentry **stack)
 {
         uint32_t row = row_num(dat, key_size, bin_num[set->bin_pos]);
 	Nit_hentry *entry = set->bins[row];
@@ -282,7 +319,8 @@ hset_remove(Nit_hset *set, const void *dat, uint32_t key_size)
 		if (compare(entry, dat, key_size)) {
 		        LIST_CONS(prev, LIST_NEXT(entry, void));
 		        ret = entry->dat;
-			free(entry);
+			LIST_CONS(entry, *stack);
+			*stack = entry;
 			--set->entry_num;
 			return ret;
 		}

@@ -22,6 +22,12 @@ struct nit_redge {
 	char str[];
 };
 
+typedef struct nit_rreuse {
+	Nit_radix *radixs;
+	Nit_redge *redges;
+	Nit_hentry *entries;
+} Nit_rreuse;
+
 enum { NIT_T_RADIX, NIT_T_REDGE };
 
 typedef struct {

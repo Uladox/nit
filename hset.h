@@ -48,7 +48,7 @@ int
 nit_hset_bin_num(Nit_hset *set);
 
 Nit_hentry *
-nit_hentry_new(void *dat, uint32_t key_size);
+nit_hentry_new(void *dat, uint32_t key_size, Nit_hentry **stack);
 
 int
 nit_hset_init(Nit_hset *set, unsigned int sequence);
@@ -56,11 +56,19 @@ nit_hset_init(Nit_hset *set, unsigned int sequence);
 void
 nit_hset_dispose(Nit_hset *set, Nit_set_free dat_free, void *extra);
 
+void
+nit_hset_dispose_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
+			 Nit_hentry **stack);
+
 Nit_hset *
 nit_hset_new(unsigned int sequence);
 
 void
 nit_hset_free(Nit_hset *set, Nit_set_free dat_free, void *extra);
+
+void
+nit_hset_free_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
+		      Nit_hentry **stack);
 
 Nit_hentry **
 nit_hset_entry(Nit_hset *set, void *dat, uint32_t key_size);
@@ -72,13 +80,15 @@ int
 hset_add_unique(Nit_hset *set, void *dat, uint32_t key_size);
 
 int
-nit_hset_add(Nit_hset *set, void *dat, uint32_t key_size);
+nit_hset_add(Nit_hset *set, void *dat, uint32_t key_size, Nit_hentry **stack);
 
 int
-nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size);
+nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size,
+		  Nit_hentry **stack);
 
 void *
-nit_hset_remove(Nit_hset *set, const void *dat, uint32_t key_size);
+nit_hset_remove(Nit_hset *set, const void *dat, uint32_t key_size,
+		Nit_hentry **stack);
 
 void *
 nit_hset_get(const Nit_hset *set, const void *dat, uint32_t key_size);
@@ -103,23 +113,25 @@ nit_hset_iter_next(Nit_hset_iter *iter);
 
 
 #if defined NIT_SHORT_NAMES || defined NIT_HSET_SHORT_NAMES
-# define hset_bin_num(...)    nit_hset_bin_num(__VA_ARGS__)
-# define hentry_new(...)      nit_hentry_new(__VA_ARGS__)
-# define hset_init(...)       nit_hset_init(__VA_ARGS__)
-# define hset_dispose(...)    nit_hset_dispose(__VA_ARGS__)
-# define hset_new(...)        nit_hset_new(__VA_ARGS__)
-# define hset_free(...)       nit_hset_free(__VA_ARGS__)
-# define hset_entry(...)      nit_hset_entry(__VA_ARGS__)
-# define hset_add_reduce(...) nit_hset_add_reduce(__VA_ARGS__)
-# define hset_add_unique(...) nit_hset_add_unique(__VA_ARGS__)
-# define hset_add(...)        nit_hset_add(__VA_ARGS__)
-# define hset_copy_add(...)   nit_hset_copy_add(__VA_ARGS__)
-# define hset_remove(...)     nit_hset_remove(__VA_ARGS__)
-# define hset_get(...)        nit_hset_get(__VA_ARGS__)
-# define hset_contains(...)   nit_hset_contains(__VA_ARGS__)
-# define hset_subset(...)     nit_hset_subset(__VA_ARGS__)
-# define hset_rehash(...)     nit_hset_rehash(__VA_ARGS__)
-# define hset_iter_init(...)  nit_hset_iter_init(__VA_ARGS__)
-# define hset_iter_dat(...)   nit_hset_iter_dat(__VA_ARGS__)
-# define hset_iter_next(...)  nit_hset_iter_next(__VA_ARGS__)
+# define hset_bin_num(...)         nit_hset_bin_num(__VA_ARGS__)
+# define hentry_new(...)           nit_hentry_new(__VA_ARGS__)
+# define hset_init(...)            nit_hset_init(__VA_ARGS__)
+# define hset_dispose(...)         nit_hset_dispose(__VA_ARGS__)
+# define hset_dispose_recycle(...) nit_hset_dispose_recycle(__VA_ARGS__)
+# define hset_new(...)             nit_hset_new(__VA_ARGS__)
+# define hset_free(...)            nit_hset_free(__VA_ARGS__)
+# define hset_free_recycle(...)    nit_hset_free_recycle(__VA_ARGS__)
+# define hset_entry(...)           nit_hset_entry(__VA_ARGS__)
+# define hset_add_reduce(...)      nit_hset_add_reduce(__VA_ARGS__)
+# define hset_add_unique(...)      nit_hset_add_unique(__VA_ARGS__)
+# define hset_add(...)             nit_hset_add(__VA_ARGS__)
+# define hset_copy_add(...)        nit_hset_copy_add(__VA_ARGS__)
+# define hset_remove(...)          nit_hset_remove(__VA_ARGS__)
+# define hset_get(...)             nit_hset_get(__VA_ARGS__)
+# define hset_contains(...)        nit_hset_contains(__VA_ARGS__)
+# define hset_subset(...)          nit_hset_subset(__VA_ARGS__)
+# define hset_rehash(...)          nit_hset_rehash(__VA_ARGS__)
+# define hset_iter_init(...)       nit_hset_iter_init(__VA_ARGS__)
+# define hset_iter_dat(...)        nit_hset_iter_dat(__VA_ARGS__)
+# define hset_iter_next(...)       nit_hset_iter_next(__VA_ARGS__)
 #endif

@@ -27,7 +27,7 @@
 #include "hmap.h"
 
 void
-nit_hmap_dispose(Nit_hmap *map, Nit_map_free dat_free, void *extra)
+hmap_dispose(Nit_hmap *map, Nit_map_free dat_free, void *extra)
 {
 	int bin_num = hset_bin_num(map);
 	int i;
@@ -48,9 +48,40 @@ nit_hmap_dispose(Nit_hmap *map, Nit_map_free dat_free, void *extra)
 }
 
 void
-nit_hmap_free(Nit_hmap *map, Nit_map_free dat_free, void *extra)
+hmap_dispose_recycle(Nit_hmap *map, Nit_map_free dat_free, void *extra,
+		     Nit_hentry **stack)
+{
+	int bin_num = hset_bin_num(map);
+	int i;
+
+	for (i = 0; i != bin_num; ++i) {
+		Nit_hentry *entry = map->bins[i];
+
+		delayed_foreach (entry) {
+		        dat_free(entry->dat,
+				 hmap_storage(entry->dat, entry->key_size),
+				 extra);
+			free(entry->dat);
+		        LIST_CONS(entry, *stack);
+			*stack = entry;
+		}
+	}
+
+	free(map->bins);
+}
+
+void
+hmap_free(Nit_hmap *map, Nit_map_free dat_free, void *extra)
 {
 	hmap_dispose(map, dat_free, extra);
+	free(map);
+}
+
+void
+hmap_free_recycle(Nit_hmap *map, Nit_map_free dat_free, void *extra,
+		  Nit_hentry **stack)
+{
+	hmap_dispose_recycle(map, dat_free, extra, stack);
 	free(map);
 }
 
@@ -69,20 +100,22 @@ hmap_dat_new(void *key, uint32_t key_size, void *storage)
 }
 
 int
-nit_hmap_add(Nit_hmap *map, void *key, uint32_t key_size, void *storage)
+nit_hmap_add(Nit_hmap *map, void *key, uint32_t key_size, void *storage,
+	     Nit_hentry **stack)
 {
 	void *dat = hmap_dat_new(key, key_size, storage);
 
 	if (!dat)
 		return -1;
 
-	return nit_hset_add(map, dat, key_size);
+	return nit_hset_add(map, dat, key_size, stack);
 }
 
 void *
-nit_hmap_remove(Nit_hmap *map, void *key, uint32_t key_size)
+nit_hmap_remove(Nit_hmap *map, void *key, uint32_t key_size,
+		Nit_hentry **stack)
 {
-	void *dat = nit_hset_remove(map, key, key_size);
+	void *dat = nit_hset_remove(map, key, key_size, stack);
 	void *storage;
 
 	if (!dat)
