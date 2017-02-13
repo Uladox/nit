@@ -11,3 +11,5 @@
 #define ARRAY_UNITS(array) (sizeof(array) / sizeof(*array))
 
 #define QUOTE(...) #__VA_ARGS__
+
+#define ANY_TYPE(VAL) ((void *) (VAL))
