@@ -39,7 +39,7 @@ get_8(Nit_artr_reuse *reuse)
 	return node;
 }
 
-static Nit_artr_node8 *
+static Nit_artr_node16 *
 get_16(Nit_artr_reuse *reuse)
 {
 	Nit_artr_node16 *node = reuse->node16s;
@@ -94,8 +94,8 @@ get_256(Nit_artr_reuse *reuse)
 }
 
 static Nit_artr_edge *
-get_edge(Nit_artr_reuse *reuse, Nit_artr_type type, uint8_t *str, size_t count,
-	void *val)
+get_edge(Nit_artr_reuse *reuse, Nit_artr_type type, const uint8_t *str,
+	 size_t count, void *val)
 {
 	Nit_artr_edge *edge = reuse->edges;
 	uint8_t *str_cpy = malloc(count);
@@ -114,7 +114,7 @@ get_edge(Nit_artr_reuse *reuse, Nit_artr_type type, uint8_t *str, size_t count,
 	edge->str = str_cpy;
 	edge->artr.count = count;
 	edge->artr.val = val;
-	return edge
+	return edge;
 }
 
 int
@@ -261,10 +261,6 @@ insert_8(Nit_artr **artr, Nit_artr_reuse *reuse,
 	 uint8_t *str, size_t size, void *val)
 {
 	uint8_t key = *str;
-	Nit_edge *edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
-				  str + 1, size - 1, val);
-
-	pcheck(edge, 0);
 
 	/* if (artr->count == 8) { */
 	/* 	if (!artr_8_to_16(artr, reuse)) */
@@ -277,7 +273,7 @@ insert_8(Nit_artr **artr, Nit_artr_reuse *reuse,
 	/* } */
 
 	NODE8(*artr)->keys[(*artr)->count] = key;
-	NODE8(*artr)->sub[(*artr)->count++] = edge;
+	NODE8(*artr)->sub[(*artr)->count++] = val;
 	return 1;
 }
 
@@ -286,10 +282,6 @@ insert_16(Nit_artr **artr, Nit_artr_reuse *reuse,
 	  uint8_t *str, size_t size, void *val)
 {
 	uint8_t key = *str;
-	Nit_edge *edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
-				  str + 1, size - 1, val);
-
-	pcheck(edge, 0);
 
 	/* if (artr->count == 16) { */
 	/* 	if (!artr_16_to_48(artr, reuse)) */
@@ -302,7 +294,7 @@ insert_16(Nit_artr **artr, Nit_artr_reuse *reuse,
 	/* } */
 
 	NODE16(*artr)->keys[(*artr)->count] = key;
-	NODE16(*artr)->sub[(*artr)->count++] = edge;
+	NODE16(*artr)->sub[(*artr)->count++] = val;
 	return 1;
 }
 
@@ -311,10 +303,6 @@ insert_48(Nit_artr **artr, Nit_artr_reuse *reuse,
 	  uint8_t *str, size_t size, void *val)
 {
 	uint8_t key = *str;
-	Nit_edge *edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
-				  str + 1, size - 1, val);
-
-	pcheck(edge, 0);
 
 	/* if (artr->count == 48) { */
 	/* 	if (!artr_48_to_256(artr, reuse)) */
@@ -326,7 +314,7 @@ insert_48(Nit_artr **artr, Nit_artr_reuse *reuse,
 	/* } */
 
 	NODE48(*artr)->keys[key] = (*artr)->count;
-	NODE48(*artr)->sub[(*artr)->count++] = edge;
+	NODE48(*artr)->sub[(*artr)->count++] = val;
 	return 1;
 }
 
@@ -335,10 +323,6 @@ insert_256(Nit_artr **artr, Nit_artr_reuse *reuse,
 	   uint8_t *str, size_t size, void *val)
 {
 	uint8_t key = *str;
-	Nit_edge *edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
-				  str + 1, size - 1, val);
-
-	pcheck(edge, 0);
 
 	NODE256(*artr)->sub[key] = val;
 	++(*artr)->count;
@@ -346,48 +330,103 @@ insert_256(Nit_artr **artr, Nit_artr_reuse *reuse,
 }
 
 static int
+edge_cut_off_start(Nit_artr_edge *edge, size_t amount)
+{
+        size_t size = edge->artr.count - amount;
+	uint8_t *str = malloc(size);
+
+	pcheck(str, 0);
+	memcpy(str, edge->str + amount, (edge->artr.count = size));
+	free(edge->str);
+	edge->str = str;
+	return 1;
+}
+
+static int
+edge_cut_off_end(Nit_artr_edge *edge, size_t amount)
+{
+        size_t size = edge->artr.count - amount;
+	uint8_t *str = malloc(size);
+
+	pcheck(str, 0);
+	memcpy(str, edge->str, (edge->artr.count = size));
+	free(edge->str);
+	edge->str = str;
+	return 1;
+}
+
+static int
+insert_edge_no_common(Nit_artr **artr, const uint8_t *str, size_t size, void *val,
+		      Nit_artr_reuse *reuse)
+{
+	Nit_artr_node8 *replace = get_8(reuse);
+	Nit_artr_edge *new_edge;
+	uint8_t key1 = *str;
+	uint8_t key2 = *EDGE(*artr)->str;
+
+	pcheck(replace, 0);
+	new_edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
+			    str + 1, size - 1, val);
+
+	if ((*artr)->count == 1) {
+		insert_8((Nit_artr **) &replace, reuse, &key1, (*artr)->val);
+		/* recycle artr */
+	} else {
+		edge_cut_off_start(EDGE(*artr), 1);
+		insert_8((Nit_artr **) &replace, reuse, &key2, *artr);
+	}
+
+	insert_8((Nit_artr **) &replace, reuse, &key1, new_edge);
+	*artr = replace;
+	return 1;
+
+}
+
+static int
 insert_edge(Nit_artr **artr, const uint8_t *str, size_t size, void *val,
 	    size_t *offset, Nit_artr_reuse *reuse)
 {
-	Nit_artr_node8 *replace = get_8(reuse);
+	/* Nit_artr_node8 *replace = get_8(reuse); */
 
-	pcheck(replace, 0);
+	/* pcheck(replace, 0); */
 
 	if (!*offset)
 		*offset = get_offset((*artr)->val, (*artr)->count, str, size);
 
-	if (!*offset) {
-		Nit_artr_edge *new;
-		uint8_t *key1 = *EDGE(*artr)->str;
-		uint8_t *key2 = *str;
+	if (!*offset)
+		return insert_edge_no_common();
+	/* { */
+	/* 	Nit_artr_edge *new; */
+	/* 	uint8_t *key1 = *EDGE(*artr)->str; */
+	/* 	uint8_t *key2 = *str; */
 
-		pcheck(replace, 0);
+	/* 	pcheck(replace, 0); */
 
-		if ((*artr)->count - 1 == 0) {
-			Nit_artr *lower = (*artr)->val;
+	/* 	if ((*artr)->count - 1 == 0) { */
+	/* 		Nit_artr *lower = (*artr)->val; */
 
-			new = get_edge(reuse, ARTR_EDGE_WITH_VAL);
-			new->artr.count = size - 1;
+	/* 		new = get_edge(reuse, ARTR_EDGE_WITH_VAL); */
+	/* 		new->artr.count = size - 1; */
 
-			if (size - 1 > 0) {
-				new->str = malloc(size - 1);
-				memcpy(new->str, str + 1, size - 1);
-			} else {
-				new->str = NULL;
-			}
+	/* 		if (size - 1 > 0) { */
+	/* 			new->str = malloc(size - 1); */
+	/* 			memcpy(new->str, str + 1, size - 1); */
+	/* 		} else { */
+	/* 			new->str = NULL; */
+	/* 		} */
 
-			insert_8(replace, lower);
-			insert_8();
-		}
+	/* 		insert_8(replace, lower); */
+	/* 		insert_8(); */
+	/* 	} */
 
-		char *lesser = malloc();
-		Nit_artr *new = get_edge(reuse, ARTR_EDGE_WITH_VAL);
+	/* 	char *lesser = malloc(); */
+	/* 	Nit_artr *new = get_edge(reuse, ARTR_EDGE_WITH_VAL); */
 
-		new->artr.val = val;
+	/* 	new->artr.val = val; */
 		
 
-		pcheck(tmp, 0);
-	}
+	/* 	pcheck(tmp, 0); */
+	/* } */ 
 
 	uint8_t *common = malloc(*offset);
 	uint8_t *diff1 = malloc((*artr)->count - *offset);
@@ -402,15 +441,29 @@ static int
 insert_here(Nit_artr **artr, const uint8_t *str, size_t size, void *val,
 	    size_t *offset, Nit_artr_reuse *reuse)
 {
+	Nit_edge *edge;
+
 	switch ((*artr)->type) {
 	case ARTR8:
-		return insert_8(artr, reuse, str, size, val);
+		edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
+				str + 1, size - 1, val);
+		pcheck(edge, 0);
+		return insert_8(artr, reuse, str, size, edge);
 	case ARTR16:
-		return insert_16(artr, reuse, str, size, val);
+		edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
+				str + 1, size - 1, val);
+		pcheck(edge, 0);
+		return insert_16(artr, reuse, str, size, edge);
 	case ARTR48:
-		return insert_48(artr, reuse, str, size, val);
+		edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
+				str + 1, size - 1, val);
+		pcheck(edge, 0);
+		return insert_48(artr, reuse, str, size, edge);
 	case ARTR256:
-		return insert_256(artr, reuse, str, size, val);
+		edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
+				str + 1, size - 1, val);
+		pcheck(edge, 0);
+		return insert_256(artr, reuse, str, size, edge);
 	case ARTR_EDGE:
 		return insert_edge();
 	case ARTR_EDGE_WITH_VAL:
