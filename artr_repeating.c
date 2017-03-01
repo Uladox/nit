@@ -134,18 +134,32 @@ recycle_edge(Nit_artr *artr, Nit_artr_reuse *reuse)
 }
 
 static int
+artr_8_to_16(Nit_artr **artr, Nit_artr_reuse *reuse)
+{
+	Nit_artr_node16 *new = get_16(reuse);
+
+	pcheck(new, 0);
+	memcpy(new, *artr, sizeof(**artr));
+	memcpy(new->keys, NODE8(*artr)->keys, sizeof(NODE8(*artr)->keys));
+	memcpy(new->sub, NODE8(*artr)->sub, sizeof(NODE8(*artr)->sub));
+	recycle_8(*artr, reuse);
+	*artr = ARTR(new);
+	return 1;
+}
+
+static int
 insert_8(Nit_artr **artr, Nit_artr_reuse *reuse,
 	 uint8_t key, void *val)
 {
-	/* if (artr->count == 8) { */
-	/* 	if (!artr_8_to_16(artr, reuse)) */
-	/* 		return 0; */
+	if ((*artr)->count == 8) {
+		if (!artr_8_to_16(artr, reuse))
+			return 0;
 
-	/* 	NODE16(*artr)->keys[8] = key; */
-	/* 	NODE16(*artr)->sub[8] = val; */
-	/* 	++(*artr)->count; */
-	/* 	return 1; */
-	/* } */
+		NODE16(*artr)->keys[8] = key;
+		NODE16(*artr)->sub[8] = val;
+		++(*artr)->count;
+		return 1;
+	}
 
 	NODE8(*artr)->keys[(*artr)->count] = key;
 	NODE8(*artr)->sub[(*artr)->count++] = val;
@@ -153,18 +167,40 @@ insert_8(Nit_artr **artr, Nit_artr_reuse *reuse,
 }
 
 static int
+artr_16_to_48(Nit_artr **artr, Nit_artr_reuse *reuse)
+{
+	Nit_artr_node48 *new = get_48(reuse);
+	int i = 0;
+
+	pcheck(new, 0);
+	memcpy(new, *artr, sizeof(**artr));
+
+	for (; i < 256; ++i)
+		new->keys[i] = INVALID_48;
+
+	for (i = 0; i < 16; ++i) {
+		new->keys[NODE16(*artr)->keys[i]] = i;
+		new->sub[i] = NODE16(*artr)->sub[i];
+	}
+
+	recycle_16(*artr, reuse);
+	*artr = ARTR(new);
+	return 1;
+}
+
+static int
 insert_16(Nit_artr **artr, Nit_artr_reuse *reuse,
 	  uint8_t key, void *val)
 {
-	/* if (artr->count == 16) { */
-	/* 	if (!artr_16_to_48(artr, reuse)) */
-	/* 		return 0; */
+	if ((*artr)->count == 16) {
+		if (!artr_16_to_48(artr, reuse))
+			return 0;
 
-	/* 	NODE48(*artr)->keys[key] = 16; */
-	/* 	NODE48(*artr)->sub[16] = val; */
-	/* 	++(*artr)->count; */
-	/* 	return 1; */
-	/* } */
+		NODE48(*artr)->keys[key] = 16;
+		NODE48(*artr)->sub[16] = val;
+		++(*artr)->count;
+		return 1;
+	}
 
 	NODE16(*artr)->keys[(*artr)->count] = key;
 	NODE16(*artr)->sub[(*artr)->count++] = val;
@@ -172,17 +208,39 @@ insert_16(Nit_artr **artr, Nit_artr_reuse *reuse,
 }
 
 static int
+artr_48_to_256(Nit_artr **artr, Nit_artr_reuse *reuse)
+{
+	Nit_artr_node256 *new = get_256(reuse);
+	uint8_t index;
+	int i = 0;
+
+	pcheck(new, 0);
+	memcpy(new, *artr, sizeof(**artr));
+	memset(new->sub, 0, sizeof(new->sub));
+
+	for (; i < 256; ++i)
+		if ((index = NODE48(*artr)->keys[i]) != INVALID_48) {
+			new->sub[i] = NODE48(*artr)->sub[index];
+		}
+
+	recycle_48(*artr, reuse);
+	*artr = ARTR(new);
+	return 1;
+}
+
+
+static int
 insert_48(Nit_artr **artr, Nit_artr_reuse *reuse,
 	  uint8_t key, void *val)
 {
-	/* if (artr->count == 48) { */
-	/* 	if (!artr_48_to_256(artr, reuse)) */
-	/* 		return 0; */
+	if ((*artr)->count == 48) {
+		if (!artr_48_to_256(artr, reuse))
+			return 0;
 
-	/* 	NODE256(*artr)->sub[key] = val; */
-	/* 	++(*artr)->count; */
-	/* 	return 1; */
-	/* } */
+		NODE256(*artr)->sub[key] = val;
+		++(*artr)->count;
+		return 1;
+	}
 
 	NODE48(*artr)->keys[key] = (*artr)->count;
 	NODE48(*artr)->sub[(*artr)->count++] = val;
@@ -190,8 +248,7 @@ insert_48(Nit_artr **artr, Nit_artr_reuse *reuse,
 }
 
 static int
-insert_256(Nit_artr **artr, Nit_artr_reuse *reuse,
-	   uint8_t key, void *val)
+insert_256(Nit_artr **artr, uint8_t key, void *val)
 {
 	NODE256(*artr)->sub[key] = val;
 	++(*artr)->count;

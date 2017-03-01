@@ -50,6 +50,22 @@ typedef struct nit_artr_reuse {
 	Nit_artr_edge    *edges;
 } Nit_artr_reuse;
 
+void
+artr_reuse_init(Nit_artr_reuse *reuse);
+
+void
+artr_reuse_dispose(Nit_artr_reuse *reuse);
+
+int
+artr_init(Nit_artr **artr, Nit_artr_reuse *reuse);
+
+void *
+artr_lookup(Nit_artr *artr, const void *dat, size_t size);
+
+int
+artr_insert(Nit_artr **artr, const void *dat, size_t size, void *val,
+	    Nit_artr_reuse *reuse);
+
 #if defined NIT_SHORT_NAMES || defined NIT_ARTR_SHORT_NAMES
 # define ARTR8 NIT_ARTR8
 # define ARTR16 NIT_ARTR16

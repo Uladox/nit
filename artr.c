@@ -24,16 +24,6 @@ artr_reuse_init(Nit_artr_reuse *reuse)
 	memset(reuse, 0, sizeof(*reuse));
 }
 
-int
-artr_init(Nit_artr **artr, Nit_artr_reuse *reuse)
-{
-	Nit_artr *tmp = (Nit_artr *) get_8(reuse);
-
-	pcheck(tmp, 0);
-	*artr = tmp;
-	return 1;
-}
-
 void
 artr_reuse_dispose(Nit_artr_reuse *reuse)
 {
@@ -45,6 +35,16 @@ artr_reuse_dispose(Nit_artr_reuse *reuse)
 	for (i = 0; i < 5; ++i)
 		for (artr = array[i]; artr;
 		     prev = artr, artr = artr->val, free(prev));
+}
+
+int
+artr_init(Nit_artr **artr, Nit_artr_reuse *reuse)
+{
+	Nit_artr *tmp = (Nit_artr *) get_8(reuse);
+
+	pcheck(tmp, 0);
+	*artr = tmp;
+	return 1;
 }
 
 /* Returns bytes to move past, if it's zero, we can't go further.
@@ -278,6 +278,14 @@ insert_edge(Nit_artr **artr, const uint8_t *str, size_t size, void *val,
 	return edge_insert_common(*artr, str, size, val, offset, reuse);
 }
 
+static Nit_artr_edge *
+remainder_edge(Nit_artr_reuse *reuse, const uint8_t *str,
+	       size_t size, void *val)
+{
+	return get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
+			str + 1, size - 1, val);
+}
+
 static int
 insert_here(Nit_artr **artr, const uint8_t *str, size_t size, void *val,
 	    size_t offset, Nit_artr_reuse *reuse)
@@ -286,25 +294,21 @@ insert_here(Nit_artr **artr, const uint8_t *str, size_t size, void *val,
 
 	switch ((*artr)->type) {
 	case ARTR8:
-		edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
-				str + 1, size - 1, val);
+		edge = remainder_edge(reuse, str, size, val);
 		pcheck(edge, 0);
 		return insert_8(artr, reuse, *str, edge);
 	case ARTR16:
-		edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
-				str + 1, size - 1, val);
+		edge = remainder_edge(reuse, str, size, val);
 		pcheck(edge, 0);
 		return insert_16(artr, reuse, *str, edge);
 	case ARTR48:
-		edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
-				str + 1, size - 1, val);
+		edge = remainder_edge(reuse, str, size, val);
 		pcheck(edge, 0);
 		return insert_48(artr, reuse, *str, edge);
 	case ARTR256:
-		edge = get_edge(reuse, NIT_ARTR_EDGE_WITH_VAL,
-				str + 1, size - 1, val);
+		edge = remainder_edge(reuse, str, size, val);
 		pcheck(edge, 0);
-		return insert_256(artr, reuse, *str, edge);
+		return insert_256(artr, *str, edge);
 	case ARTR_EDGE:
 	case ARTR_EDGE_WITH_VAL:
 		return insert_edge(artr, str, size, val, offset, reuse);
