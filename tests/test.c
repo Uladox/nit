@@ -226,19 +226,19 @@ test_artr(const MunitParameter params[], void *data)
 
 	artr_reuse_init(&reuse);
 	artr_init(&artr, &reuse);
-	/* artr_insert(&artr, "str", 3, "hello!", &reuse); */
-	/* artr_insert(&artr, "s", 3, "hi!", &reuse); */
-	/* artr_insert(&artr, "string", 3, "hola!", &reuse); */
-	/* munit_assert_string_equal("hello!", artr_lookup(artr, "str", 3)); */
-	/* munit_assert_string_equal("hi!", artr_lookup(artr, "s", 3)); */
-	/* munit_assert_string_equal("hola!", artr_lookup(artr, "string", 3)); */
+	artr_insert(&artr, "str", 3, "hello!", &reuse);
+	artr_insert(&artr, "s", 1, "hi!", &reuse);
+	/* artr_insert(&artr, "string", 6, "hola!", &reuse); */
+	munit_assert_string_equal("hello!", artr_lookup(artr, "str", 3));
+	munit_assert_string_equal("hi!", artr_lookup(artr, "s", 1));
+	/* munit_assert_string_equal("hola!", artr_lookup(artr, "string", 6)); */
 
-	for (uint32_t key = 0; key < 9; ++key) {
-		uint32_t *key2 = palloc(key2);
+	/* for (uint32_t key = 0; key < 256; ++key) { */
+	/* 	uint32_t *key2 = palloc(key2); */
 
-		*key2 = key;
-		artr_insert(&artr, &key, 1, key2, &reuse);
-	}
+	/* 	*key2 = key; */
+	/* 	artr_insert(&artr, &key, 1, key2, &reuse); */
+	/* } */
 
 	/* for (uint32_t key = 0; key < 256; ++key) { */
 	/* 	uint32_t val = *(uint32_t *) artr_lookup(artr, &key, 1); */

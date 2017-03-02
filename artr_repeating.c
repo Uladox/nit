@@ -140,6 +140,7 @@ artr_8_to_16(Nit_artr **artr, Nit_artr_reuse *reuse)
 
 	pcheck(new, 0);
 	memcpy(new, *artr, sizeof(**artr));
+	ARTR(new)->type = ARTR16;
 	memcpy(new->keys, NODE8(*artr)->keys, sizeof(NODE8(*artr)->keys));
 	memcpy(new->sub, NODE8(*artr)->sub, sizeof(NODE8(*artr)->sub));
 	recycle_8(*artr, reuse);
@@ -174,6 +175,7 @@ artr_16_to_48(Nit_artr **artr, Nit_artr_reuse *reuse)
 
 	pcheck(new, 0);
 	memcpy(new, *artr, sizeof(**artr));
+	ARTR(new)->type = ARTR48;
 
 	for (; i < 256; ++i)
 		new->keys[i] = INVALID_48;
@@ -216,6 +218,7 @@ artr_48_to_256(Nit_artr **artr, Nit_artr_reuse *reuse)
 
 	pcheck(new, 0);
 	memcpy(new, *artr, sizeof(**artr));
+	ARTR(new)->type = ARTR256;
 	memset(new->sub, 0, sizeof(new->sub));
 
 	for (; i < 256; ++i)

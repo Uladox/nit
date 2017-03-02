@@ -56,11 +56,91 @@ artr_init(Nit_artr **artr, Nit_artr_reuse *reuse)
  * array index so that we can replace the pointer in it with another one when
  *  resizeing. It's not as bad as it seems.
  */
-static inline size_t
-artr_move_one_level(Nit_artr *artr, Nit_artr ***next,
-		    const uint8_t *str, size_t size, size_t *offset)
+#include <stdio.h>
+/* static inline size_t */
+/* artr_move_one_level(Nit_artr *artr, Nit_artr ***next, */
+/* 		    const uint8_t *str, size_t size, size_t *offset) */
+/* { */
+/* 	unsigned int i = 0; */
+/* 	const uint8_t *str2; */
+/* 	Nit_artr **tmp; */
+
+/* 	switch (artr->type) { */
+/* 	case ARTR8: */
+/* 		for (; i < artr->count; ++i) */
+/* 			if (NODE8(artr)->keys[i] == *str) { */
+/* 				*next = &NODE8(artr)->sub[i]; */
+/* 				return 1; */
+/* 			} */
+
+/* 		return 0; */
+/* 	case ARTR16: */
+/* 		for (; i < artr->count; ++i) */
+/* 			if (NODE16(artr)->keys[i] == *str) { */
+/* 				*next = &NODE16(artr)->sub[i]; */
+/* 				return 1; */
+/* 			} */
+
+/* 		return 0; */
+/* 	case ARTR48: */
+/* 		if ((i = NODE48(artr)->keys[*str]) == INVALID_48) */
+/* 			return 0; */
+
+/* 		*next = &NODE48(artr)->sub[i]; */
+/* 		return 1; */
+/* 	case ARTR256: */
+/* 		if (!*(tmp = &NODE256(artr)->sub[*str])) */
+/* 			return 0; */
+
+/* 		*next = tmp; */
+/* 		return 1; */
+/* 	case ARTR_EDGE: */
+/* 		if (artr->count > size) */
+/* 			return 0; */
+
+/* 		str2 = EDGE(artr)->str; */
+
+/* 		for (; i < artr->count; ++str, ++str2, ++i) */
+/* 			if (*str != *str2) { */
+/* 				*offset = i; */
+/* 				return 0; */
+/* 			} */
+
+/* 		*next = (Nit_artr **) &artr->val; */
+
+/* 		return artr->count; */
+/* 	case ARTR_EDGE_WITH_VAL: */
+/* 		printf("%.*s\n", artr->count, EDGE(artr)->str); */
+/* 		if (artr->count != size) */
+/* 			return 0; */
+
+/* 		str2 = EDGE(artr)->str; */
+
+/* 		for (; i < size; ++str, ++str2, ++i) */
+/* 			    if (*str != *str2) { */
+/* 				    *offset = i; */
+/* 				    return 0; */
+/* 			    } */
+
+/* 		return size; */
+/* 	} */
+
+/* 	return -1; /\* can never happen, ever *\/ */
+/* } */
+
+static void
+node_next_update(const uint8_t **str_ref, size_t *size)
+{
+	++*str_ref;
+	--*size;
+}
+
+static Nit_artr **
+artr_next_level(Nit_artr *artr, const uint8_t **str_ref,
+		size_t *size, size_t *offset)
 {
 	unsigned int i = 0;
+	const uint8_t *str = *str_ref;
 	const uint8_t *str2;
 	Nit_artr **tmp;
 
@@ -68,80 +148,86 @@ artr_move_one_level(Nit_artr *artr, Nit_artr ***next,
 	case ARTR8:
 		for (; i < artr->count; ++i)
 			if (NODE8(artr)->keys[i] == *str) {
-				*next = &NODE8(artr)->sub[i];
-				return 1;
+				node_next_update(str_ref, size);
+				return &NODE8(artr)->sub[i];
 			}
 
-		return 0;
+		return NULL;
 	case ARTR16:
 		for (; i < artr->count; ++i)
 			if (NODE16(artr)->keys[i] == *str) {
-				*next = &NODE16(artr)->sub[i];
-				return 1;
+				node_next_update(str_ref, size);
+				return &NODE16(artr)->sub[i];
 			}
 
-		return 0;
+		return NULL;
 	case ARTR48:
 		if ((i = NODE48(artr)->keys[*str]) == INVALID_48)
-			return 0;
+			return NULL;
 
-		*next = &NODE48(artr)->sub[i];
-		return 1;
+		node_next_update(str_ref, size);
+		return &NODE48(artr)->sub[i];
 	case ARTR256:
 		if (!*(tmp = &NODE256(artr)->sub[*str]))
-			return 0;
+			return NULL;
 
-		*next = tmp;
-		return 1;
+		node_next_update(str_ref, size);
+		return tmp;
 	case ARTR_EDGE:
-		if (artr->count > size)
-			return 0;
+		if (artr->count > *size)
+			return NULL;
 
 		str2 = EDGE(artr)->str;
 
 		for (; i < artr->count; ++str, ++str2, ++i)
 			if (*str != *str2) {
 				*offset = i;
-				return 0;
+				return NULL;
 			}
 
-		*next = (Nit_artr **) &artr->val;
+		*str_ref += artr->count;
+		*size -= artr->count;
 
-		return artr->count;
+		return (Nit_artr **) &artr->val;
 	case ARTR_EDGE_WITH_VAL:
-		if (artr->count != size)
-			return 0;
+		if (artr->count != *size)
+			return NULL;
 
 		str2 = EDGE(artr)->str;
 
-		for (; i < size; ++str, ++str2, ++i)
+		for (; i < *size; ++str, ++str2, ++i)
 			    if (*str != *str2) {
 				    *offset = i;
-				    return 0;
+				    return NULL;
 			    }
 
-		return size;
+		*str_ref += artr->count;
+		*size -= artr->count;
+		/* printf("%.*s\n", artr->count, EDGE(artr)->str); */
+		/* printf("%zu\n", *size); */
+		return NULL;
 	}
 
-	return -1; /* can never happen, ever */
+	return NULL; /* can never happen, ever */
 }
+
 
 void *
 artr_lookup(Nit_artr *artr, const void *dat, size_t size)
 {
-	size_t tmp;
 	size_t offset;
-	Nit_artr **next = NULL;
+	Nit_artr **next = &artr;
 	const uint8_t *str = dat;
 
-	for (; size; artr = *next) {
-		if (!(tmp = artr_move_one_level(artr, &next, str,
-						size, &offset)))
-			return NULL;
+	for (; size; artr = *next)
+		if (!(next = artr_next_level(artr, &str,
+					     &size, &offset))) {
+			if (!size) {
+				return artr->val;
+			}
 
-		str += tmp;
-		size -= tmp;
-	}
+			return NULL;
+		}
 
 	if (artr->type == ARTR_EDGE)
 		return NULL;
@@ -321,20 +407,15 @@ int
 artr_insert(Nit_artr **artr, const void *dat, size_t size, void *val,
 	    Nit_artr_reuse *reuse)
 {
-	Nit_artr **next = NULL;
-	size_t tmp;
+	Nit_artr **next = artr;
 	size_t offset = 0;
 	const uint8_t *str = dat;
 
-	for (; size; artr = next) {
-		if (!(tmp = artr_move_one_level(*artr, &next,
-						str, size, &offset)))
+	for (; size; artr = next)
+		if (!(next = artr_next_level(*artr,
+					     &str, &size, &offset)))
 			return insert_here(artr, str, size, val,
 					   offset, reuse);
-
-		str += tmp;
-		size -= tmp;
-	}
 
 	(*artr)->val = val;
 	return 1;
