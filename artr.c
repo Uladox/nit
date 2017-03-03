@@ -222,9 +222,8 @@ artr_lookup(Nit_artr *artr, const void *dat, size_t size)
 	for (; size; artr = *next)
 		if (!(next = artr_next_level(artr, &str,
 					     &size, &offset))) {
-			if (!size) {
+			if (!size)
 				return artr->val;
-			}
 
 			return NULL;
 		}
@@ -295,7 +294,7 @@ insert_edge_nulled(Nit_artr **artr, const uint8_t *str, size_t size, void *val,
 
 	ARTR(replace)->val = (*artr)->val;
 	recycle_edge(*artr, reuse);
-	new_edge = get_edge(reuse, ARTR_EDGE_WITH_VAL, str + 1, size - 1, val);
+	new_edge = get_edge(reuse, ARTR_EDGE_WITH_VAL, str, size, val);
 	insert_8((Nit_artr **) &replace, reuse, key, new_edge);
 	*artr = ARTR(replace);
 	return 1;
@@ -311,8 +310,7 @@ insert_edge_no_common(Nit_artr **artr, const uint8_t *str, size_t size, void *va
 	uint8_t key2 = *EDGE(*artr)->str;
 
 	pcheck(replace, 0);
-	new_edge = get_edge(reuse, ARTR_EDGE_WITH_VAL,
-			    str + 1, size - 1, val);
+	new_edge = get_edge(reuse, ARTR_EDGE_WITH_VAL, str, size, val);
 
 	if ((*artr)->count == 1 && (*artr)->type != ARTR_EDGE_WITH_VAL) {
 		insert_8((Nit_artr **) &replace, reuse, key1, (*artr)->val);
@@ -339,14 +337,29 @@ edge_insert_common(Nit_artr *artr, const uint8_t *str, size_t size, void *val,
 	Nit_artr_edge *new_rest;
 
 	pcheck(split, 0);
-	old_rest = get_edge(reuse, artr->type, EDGE(artr)->str + 1,
-			    artr->count - offset - 1, artr->val);
-	new_rest = get_edge(reuse, ARTR_EDGE_WITH_VAL, str + 1,
-			    size - offset - 1, val);
+	old_rest = get_edge(reuse, artr->type, EDGE(artr)->str,
+			    artr->count - offset, artr->val);
+	new_rest = get_edge(reuse, ARTR_EDGE_WITH_VAL, str,
+			    size - offset, val);
 	insert_8((Nit_artr **) &split, reuse, key1, old_rest);
 	insert_8((Nit_artr **) &split, reuse, key2, new_rest);
 	return edge_cut_off_end(EDGE(artr), offset);
 }
+
+/* static int */
+/* edge_insert_before(Nit_artr *artr, void *val, */
+/* 		   size_t offset, Nit_artr_reuse *reuse) */
+/* { */
+/* 	Nit_artr_node8 *replace = get_8(reuse); */
+/* 	uint8_t key = *str; */
+
+/* 	ARTR(replace)->val = (*artr)->val; */
+/* 	recycle_edge(*artr, reuse); */
+/* 	new_edge = get_edge(reuse, ARTR_EDGE_WITH_VAL, str + 1, size - 1, val); */
+/* 	insert_8((Nit_artr **) &replace, reuse, key, new_edge); */
+/* 	*artr = ARTR(replace); */
+/* 	return 1; */
+/* } */
 
 static int
 insert_edge(Nit_artr **artr, const uint8_t *str, size_t size, void *val,
@@ -377,6 +390,8 @@ insert_here(Nit_artr **artr, const uint8_t *str, size_t size, void *val,
 	    size_t offset, Nit_artr_reuse *reuse)
 {
 	Nit_artr_edge *edge;
+
+	printf("edgy!\n");
 
 	switch ((*artr)->type) {
 	case ARTR8:
@@ -416,6 +431,10 @@ artr_insert(Nit_artr **artr, const void *dat, size_t size, void *val,
 					     &str, &size, &offset)))
 			return insert_here(artr, str, size, val,
 					   offset, reuse);
+
+	if ((*artr)->type == ARTR_EDGE ||
+	    (*artr)->type == ARTR_EDGE_WITH_VAL)
+		return insert_edge(artr, str, size, val, offset, reuse);
 
 	(*artr)->val = val;
 	return 1;

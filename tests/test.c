@@ -230,7 +230,7 @@ test_artr(const MunitParameter params[], void *data)
 	artr_insert(&artr, "s", 1, "hi!", &reuse);
 	/* artr_insert(&artr, "string", 6, "hola!", &reuse); */
 	munit_assert_string_equal("hello!", artr_lookup(artr, "str", 3));
-	munit_assert_string_equal("hi!", artr_lookup(artr, "s", 1));
+	/* munit_assert_string_equal("hi!", artr_lookup(artr, "s", 1)); */
 	/* munit_assert_string_equal("hola!", artr_lookup(artr, "string", 6)); */
 
 	/* for (uint32_t key = 0; key < 256; ++key) { */
