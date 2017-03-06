@@ -37,9 +37,9 @@ typedef struct nit_artr_edge {
 } Nit_artr_edge;
 
 typedef struct nit_artr_iter {
-	Nit_artr_type type;
-	unsigned int count;
-	Nit_artr *artr;
+	Nit_artr **artr;
+	size_t offset;
+	int passed;
 } Nit_artr_iter;
 
 typedef struct nit_artr_reuse {
