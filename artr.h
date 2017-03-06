@@ -59,12 +59,28 @@ artr_reuse_dispose(Nit_artr_reuse *reuse);
 int
 artr_init(Nit_artr **artr, Nit_artr_reuse *reuse);
 
+void
+artr_iter_set(Nit_artr_iter *iter, Nit_artr **artr);
+
+size_t
+artr_iter_move(Nit_artr_iter *iter, const void *dat, size_t len);
+
 void *
-artr_lookup(Nit_artr *artr, const void *dat, size_t size);
+artr_iter_get(Nit_artr_iter *iter);
+
+void *
+artr_iter_lookup(Nit_artr_iter *iter, const void *dat, size_t len);
 
 int
-artr_insert(Nit_artr **artr, const void *dat, size_t size, void *val,
-	    Nit_artr_reuse *reuse);
+artr_iter_insert(Nit_artr_iter *iter, const void *dat, size_t len, void *val,
+		 Nit_artr_reuse *reuse);
+
+/* void * */
+/* artr_lookup(Nit_artr *artr, const void *dat, size_t size); */
+
+/* int */
+/* artr_insert(Nit_artr **artr, const void *dat, size_t size, void *val, */
+/* 	    Nit_artr_reuse *reuse); */
 
 #if defined NIT_SHORT_NAMES || defined NIT_ARTR_SHORT_NAMES
 # define ARTR8 NIT_ARTR8
