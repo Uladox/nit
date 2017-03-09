@@ -304,7 +304,7 @@ insert_edge_nulled(Nit_artr **artr, const uint8_t *str, size_t size, void *val,
 
 	ARTR(replace)->val = (*artr)->val;
 	recycle_edge(*artr, reuse);
-	new_edge = get_edge(reuse, ARTR_EDGE_WITH_VAL, str, size, val);
+	new_edge = get_edge(reuse, ARTR_EDGE_WITH_VAL, str + 1, size - 1, val);
 	insert_8((Nit_artr **) &replace, reuse, key, new_edge);
 	*artr = ARTR(replace);
 	return 1;

@@ -62,10 +62,10 @@ artr_iter_copy(Nit_artr_iter *des, Nit_artr_iter *src)
 }
 
 static void
-node_next_update(const uint8_t **str_ref, size_t *size)
+node_next_update(const uint8_t **str_ref, size_t *len)
 {
 	++*str_ref;
-	--*size;
+	*len -= 1;
 }
 
 
@@ -101,6 +101,7 @@ artr_iter_move(Nit_artr_iter *iter, const void *dat, size_t len)
 	iter->offset = 0;
 	iter->passed = 1;
 
+next_iteration:
 	while (len) {
 		/* printf("%u\n", *str); */
 		switch (artr->type) {
@@ -109,7 +110,7 @@ artr_iter_move(Nit_artr_iter *iter, const void *dat, size_t len)
 				if (NODE8(artr)->keys[i] == *str) {
 					node_next_update(&str, &len);
 					artr = *(iter->artr = &NODE8(artr)->sub[i]);
-					break;
+					goto next_iteration;
 				}
 
 		return len;
@@ -118,7 +119,7 @@ artr_iter_move(Nit_artr_iter *iter, const void *dat, size_t len)
 				if (NODE16(artr)->keys[i] == *str) {
 					node_next_update(&str, &len);
 					artr = *(iter->artr = &NODE16(artr)->sub[i]);
-					break;
+					goto next_iteration;
 			}
 
 		return len;
@@ -151,6 +152,10 @@ artr_iter_move(Nit_artr_iter *iter, const void *dat, size_t len)
 			break;
 		case ARTR_EDGE_WITH_VAL:
 			str2 = EDGE(artr)->str;
+
+			if (!str2)
+				return len;
+
 			shorter = artr->count < len ? artr->count : len;
 
 			for (; i < shorter; ++str, ++str2, ++i)
@@ -218,7 +223,6 @@ artr_iter_insert(Nit_artr_iter *iter, const void *dat, size_t len, void *val,
 	Nit_artr *artr;
 
 	artr_iter_copy(&tmp, iter);
-	artr_iter_move(&tmp, dat, len);
         left = artr_iter_move(&tmp, dat, len);
         moved = len - left;
 	rest = ((const uint8_t *) dat) + moved;
