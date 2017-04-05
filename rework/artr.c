@@ -61,110 +61,44 @@ artr_iter_copy(Nit_artr_iter *des, Nit_artr_iter *src)
 	memcpy(des, src, sizeof(*des));
 }
 
-static void
-node_next_update(const uint8_t **str_ref, size_t *len)
-{
-	++*str_ref;
-	*len -= 1;
-}
-
-
-static void
-edge_passed(const uint8_t **str_ref, size_t *size, size_t i)
-{
-	*str_ref += i;
-	*size -= i;
-}
-
-static void
-edge_not_passed(Nit_artr_iter *iter, const uint8_t **str_ref,
-		size_t *size, size_t i)
-{
-	*str_ref += i;
-	*size -= i;
-	iter->offset = i;
-	iter->passed = 0;
-}
-
-#include <stdio.h>
-
 size_t
 artr_iter_move(Nit_artr_iter *iter, const void *dat, size_t len)
 {
 	const uint8_t *str = dat;
-	const uint8_t *str2;
 	Nit_artr *artr = *iter->artr;
-	Nit_artr **tmp;
-	size_t i = 0;
-	size_t shorter;
 
 	iter->offset = 0;
 	iter->passed = 1;
 
-next_iteration:
-	while (len) {
-		/* printf("%u\n", *str); */
+	for (; len; artr = *iter->artr) {
 		switch (artr->type) {
 		case ARTR8:
-			for (i = 0; i < artr->count; ++i)
-				if (NODE8(artr)->keys[i] == *str) {
-					node_next_update(&str, &len);
-					artr = *(iter->artr = &NODE8(artr)->sub[i]);
-					goto next_iteration;
-				}
+			if (artr_iter_move8(iter, artr, &str, &len))
+				break;
 
-		return len;
+			return len;
 		case ARTR16:
-			for (i = 0; i < artr->count; ++i)
-				if (NODE16(artr)->keys[i] == *str) {
-					node_next_update(&str, &len);
-					artr = *(iter->artr = &NODE16(artr)->sub[i]);
-					goto next_iteration;
-			}
+		        if (artr_iter_move16(iter, artr, &str, &len))
+				break;
 
-		return len;
+			return len;
 		case ARTR48:
-			if ((i = NODE48(artr)->keys[*str]) == INVALID_48)
-				return len;
+			if (artr_iter_move48(iter, artr, &str, &len))
+				break;
 
-		node_next_update(&str, &len);
-		artr = *(iter->artr = &NODE48(artr)->sub[i]);
-		break;
+			return len;
 		case ARTR256:
-			if (!*(tmp = &NODE256(artr)->sub[*str]))
-				return len;
+			if (artr_iter_move256(iter, artr, &str, &len))
+				break;
 
-			node_next_update(&str, &len);
-			artr = *(iter->artr = tmp);
-			break;
+			return len;
 		case ARTR_EDGE:
-			str2 = EDGE(artr)->str;
-			shorter = artr->count < len ? artr->count : len;
+			if (artr_iter_move256(iter, artr, &str, &len))
+				break;
 
-			for (; i < shorter; ++str, ++str2, ++i)
-				if (*str != *str2) {
-					edge_not_passed(iter, &str, &len, i);
-					return len;
-				}
-
-			edge_passed(&str, &len, artr->count);
-			artr = *(iter->artr = (Nit_artr **) &artr->val);
-			break;
+			return len;
 		case ARTR_EDGE_WITH_VAL:
-			str2 = EDGE(artr)->str;
-
-			if (!str2)
-				return len;
-
-			shorter = artr->count < len ? artr->count : len;
-
-			for (; i < shorter; ++str, ++str2, ++i)
-				if (*str != *str2) {
-					edge_not_passed(iter, &str, &len, i);
-					return len;
-				}
-
-			edge_passed(&str, &len, artr->count);
+			artr_iter_move_edge_value(iter, artr, &str, &len);
 			return len;
 		}
 	}

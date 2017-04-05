@@ -190,6 +190,135 @@ artr_16_to_48(Nit_artr **artr, Nit_artr_reuse *reuse)
 	return 1;
 }
 
+static void
+node_next_update(const uint8_t **str_ref, size_t *len)
+{
+	++*str_ref;
+	--*len;
+}
+
+static int
+artr_iter_move8(Nit_artr_iter *iter, Nit_artr *artr,
+		const uint8_t **str, size_t *len)
+{
+	size_t i;
+	uint8_t key = **str;
+
+	for (i = 0; i < artr->count; ++i)
+		if (NODE8(artr)->keys[i] == key) {
+			node_next_update(str, len);
+			artr = *(iter->artr = &NODE8(artr)->sub[i]);
+		        return 1;
+		}
+
+	return 0;
+}
+
+static int
+artr_iter_move16(Nit_artr_iter *iter, Nit_artr *artr,
+		 const uint8_t **str, size_t *len)
+{
+	size_t i;
+	uint8_t key = **str;
+
+	for (i = 0; i < artr->count; ++i)
+		if (NODE16(artr)->keys[i] == key) {
+			node_next_update(str, len);
+		        iter->artr = &NODE16(artr)->sub[i];
+		        return 1;
+		}
+
+	return 0;
+}
+
+static int
+artr_iter_move48(Nit_artr_iter *iter, Nit_artr *artr,
+		 const uint8_t **str, size_t *len)
+{
+	uint8_t i = NODE48(artr)->keys[**str];
+
+	if (i == INVALID_48)
+		return 0;
+
+	node_next_update(str, len);
+        iter->artr = &NODE48(artr)->sub[i];
+	return 1;
+}
+
+static int
+artr_iter_move256(Nit_artr_iter *iter, Nit_artr *artr,
+		  const uint8_t **str, size_t *len)
+{
+	Nit_artr **tmp = &NODE256(artr)->sub[**str];
+
+	if (!*tmp)
+		return 0;
+
+	node_next_update(str, len);
+        iter->artr = tmp;
+	return 1;
+}
+
+static void
+edge_passed(const uint8_t **str_ref, size_t *size, size_t i)
+{
+	*str_ref += i;
+	*size -= i;
+}
+
+static void
+edge_not_passed(Nit_artr_iter *iter, const uint8_t **str_ref,
+		size_t *size, size_t i)
+{
+	*str_ref += i;
+	*size -= i;
+	iter->offset = i;
+	iter->passed = 0;
+}
+
+
+static int
+artr_iter_move_edge(Nit_artr_iter *iter, Nit_artr *artr,
+		    const uint8_t **str_ref, size_t *len)
+{
+	const uint8_t *e_str = EDGE(artr)->str;
+	const uint8_t *str = *str_ref;
+	size_t shorter = artr->count < *len ? artr->count : *len;
+	size_t i;
+
+	for (i = 0; i < shorter; ++str, ++e_str, ++i)
+		if (*str != *e_str) {
+			edge_not_passed(iter, str_ref, len, i);
+			return 0;
+		}
+
+	edge_passed(str_ref, len, artr->count);
+        iter->artr = (Nit_artr **) &artr->val;
+	return 1;
+}
+
+static int
+artr_iter_move_edge_value(Nit_artr_iter *iter, Nit_artr *artr,
+			  const uint8_t **str_ref, size_t *len)
+{
+	const uint8_t *e_str = EDGE(artr)->str;
+	const uint8_t *str = *str_ref;
+	size_t shorter = artr->count < *len ? artr->count : *len;
+	size_t i;
+
+	if (!e_str)
+		return 0;
+
+	for (i = 0; i < shorter; ++str, ++e_str, ++i)
+		if (*str != *e_str) {
+			edge_not_passed(iter, str_ref, len, i);
+			return 0;
+		}
+
+	edge_passed(str_ref, len, artr->count);
+	return 1;
+}
+
 static int
 insert_16(Nit_artr **artr, Nit_artr_reuse *reuse,
 	  uint8_t key, void *val)
