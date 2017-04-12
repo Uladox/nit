@@ -62,7 +62,7 @@ hmap_dispose_recycle(Nit_hmap *map, Nit_map_free dat_free, void *extra,
 				 hmap_storage(entry->dat, entry->key_size),
 				 extra);
 			free(entry->dat);
-		        LIST_CONS(entry, *stack);
+		        LIST_APP(entry, *stack);
 			*stack = entry;
 		}
 	}

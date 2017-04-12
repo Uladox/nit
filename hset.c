@@ -127,7 +127,7 @@ hentry_new(void *dat, uint32_t key_size, Nit_hentry **stack)
 	entry->dat = dat;
 	entry->key_size = key_size;
 	entry->hash = murmur3_32(dat, key_size, H_SEED);
-        LIST_CONS(entry, NULL);
+        LIST_APP(entry, NULL);
 
 	return entry;
 }
@@ -174,7 +174,7 @@ nit_hset_dispose_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
 
 	        delayed_foreach (entry) {
 		        dat_free(entry->dat, extra);
-			LIST_CONS(entry, *stack);
+			LIST_APP(entry, *stack);
 			*stack = entry;
 		}
 	}
@@ -274,7 +274,7 @@ hset_add(Nit_hset *set, void *dat, uint32_t key_size, Nit_hentry **stack)
 
 	pcheck(entry, 0);
 	bin = set->bins + (entry->hash % bin_num[set->bin_pos]);
-	LIST_CONS(entry, *bin);
+	LIST_APP(entry, *bin);
         *bin = entry;
 	return 1;
 }
@@ -317,9 +317,9 @@ hset_remove(Nit_hset *set, const void *dat, uint32_t key_size, Nit_hentry **stac
 
 	foreach (entry) {
 		if (compare(entry, dat, key_size)) {
-		        LIST_CONS(prev, LIST_NEXT(entry, void));
+		        LIST_APP(prev, LIST_NEXT(entry, void));
 		        ret = entry->dat;
-			LIST_CONS(entry, *stack);
+			LIST_APP(entry, *stack);
 			*stack = entry;
 			--set->entry_num;
 			return ret;
@@ -387,7 +387,7 @@ hset_rehash(Nit_hset *set)
 			uint32_t row = entry->hash % new_bin_num;
 			Nit_hentry **bin = new_bins + row;
 
-			LIST_CONS(entry, *bin);
+			LIST_APP(entry, *bin);
 			*bin = entry;
 		}
 	}

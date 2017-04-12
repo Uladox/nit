@@ -32,7 +32,7 @@ typedef struct {
 #define NIT_LIST_INC(LIST)			\
 	(LIST = NIT_LIST_NEXT(LIST, void))
 
-#define NIT_LIST_CONS(LIST, END)		\
+#define NIT_LIST_APP(LIST, END)		\
 	(NIT_LIST(LIST)->next = (END))
 
 #define NIT_NEXT_REF(LIST, TYPE)		\
@@ -55,7 +55,7 @@ typedef struct {
 #define NIT_DLIST_DEC(LIST)			\
 	(LIST = NIT_DLIST_PREV(LIST, void))
 
-#define NIT_DLIST_RCONS(LIST, BEGIN)		\
+#define NIT_DLIST_PREP(LIST, BEGIN)		\
 	(NIT_DLIST(LIST)->prev = (BEGIN))
 
 #define NIT_PREV_REF(LIST, TYPE)		\
@@ -73,13 +73,13 @@ typedef struct {
 # define LIST(...)             NIT_LIST(__VA_ARGS__)
 # define LIST_NEXT(...)        NIT_LIST_NEXT(__VA_ARGS__)
 # define LIST_INC(...)         NIT_LIST_INC(__VA_ARGS__)
-# define LIST_CONS(...)        NIT_LIST_CONS(__VA_ARGS__)
+# define LIST_APP(...)         NIT_LIST_APP(__VA_ARGS__)
 # define NEXT_REF(...)         NIT_NEXT_REF(__VA_ARGS__)
 # define foreach(...)          nit_foreach(__VA_ARGS__)
 # define delayed_foreach(...)  nit_delayed_foreach(__VA_ARGS__)
 # define DLIST_PREV(...)       NIT_DLIST_PREV(__VA_ARGS__)
 # define LIST_DEC(...)         NIT_LIST_DEC(__VA_ARGS__)
-# define DLIST_RCONS(...)      NIT_DLIST_RCONS(__VA_ARGS__)
+# define DLIST_PREP(...)       NIT_DLIST_PREP(__VA_ARGS__)
 # define PREV_REF(...)         NIT_PREV_REF(__VA_ARGS__)
 # define preveach(...)         nit_preveach(__VA_ARGS__)
 # define delayed_preveach(...) nit_delayed_preveach(__VA_ARGS__)
