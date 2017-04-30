@@ -12,4 +12,8 @@
 
 #define QUOTE(...) #__VA_ARGS__
 
-#define ANY_TYPE(VAL) ((void *) (VAL))
+#define ANY_TYPE(val) ((void *) (val))
+
+/* If used, #include <stddef.h> */
+#define CONTAINER(ptr, type, member)		\
+	((type *) ((char *)(ptr) - offsetof(type, member))

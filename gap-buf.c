@@ -30,16 +30,14 @@ int
 gap_init(Nit_gap *gap, size_t size)
 {
 	if (unlikely(size <= 0))
-		return 1;
+		return 0;
 
 	gap->bytes = palloc_a0(gap->bytes, size);
-	pcheck(gap->bytes, 1);
+	pcheck(gap->bytes, 0);
 	gap->size = size;
-
 	gap->start = 0;
 	gap->end = size - 1;
-
-	return 0;
+	return 1;
 }
 
 int
@@ -47,11 +45,9 @@ nit_gap_clone(Nit_gap *clone, const Nit_gap *src)
 {
 	clone->start = src->start;
 	clone->end = src->end;
-
-	pcheck(clone->bytes = malloc(clone->size = src->size), 1);
+	pcheck(clone->bytes = malloc(clone->size = src->size), 0);
 	memcpy(clone->bytes, src->bytes, src->size);
-
-	return 0;
+	return 1;
 }
 
 int
@@ -59,38 +55,37 @@ gap_replicate(Nit_gap *rep, const Nit_gap *src)
 {
 	gap_empty(rep);
 
-	if (gap_resize(rep, src->size))
-		return 1;
+	if (!gap_resize(rep, src->size))
+		return 0;
 
 	memcpy(rep->bytes, src->bytes, rep->start = src->start);
 	memcpy(rep->bytes + (rep->end = src->end + (rep->size - src->size)),
-	       bytes_past_end(src),
-	       size_past_end(src));
-
-	return 0;
+	       bytes_past_end(src), size_past_end(src));
+	return 1;
 }
 
 int
 gap_resize(Nit_gap *gap, size_t size)
 {
+	size_t added_size;
+	size_t new_size;
+	char *new_bytes;
+
 	if (gap_hole_len(gap) > size)
-		return 0;
+		return 1;
 
-	size_t added_size = gap->size * 0.5 + size;
-	size_t new_size = gap->size + added_size;
-	char *new_bytes = palloc_a0(new_bytes, new_size);
-
-	pcheck(new_bytes, 1);
+	added_size = gap->size * 0.5 + size;
+	new_size = gap->size + added_size;
+	new_bytes = palloc_a0(new_bytes, new_size);
+	pcheck(new_bytes, 0);
 	memcpy(new_bytes, gap->bytes, gap->start);
 	memcpy(new_bytes + added_size + gap->end + 1,
-	       bytes_past_end(gap),
-	       size_past_end(gap));
+	       bytes_past_end(gap), size_past_end(gap));
 	gap->end += added_size;
 	free(gap->bytes);
 	gap->bytes = new_bytes;
 	gap->size = new_size;
-
-	return 0;
+	return 1;
 }
 
 void
@@ -132,12 +127,12 @@ gap_move_f(Nit_gap *gap, size_t amount)
 	ptrdiff_t pos;
 
 	if (unlikely(!gap_valid_pos(gap, pos = gap->end + amount)))
-		return 1;
+		return 0;
 
 	while (gap->end != pos)
 		gap->bytes[gap->start++] = gap->bytes[++gap->end];
 
-	return 0;
+	return 1;
 }
 
 int
@@ -146,12 +141,12 @@ gap_move_b(Nit_gap *gap, size_t amount)
 	ptrdiff_t pos;
 
 	if (unlikely(!gap_valid_pos(gap, pos = gap->start - amount)))
-		return 1;
+		return 0;
 
 	while (gap->start != pos)
 		gap->bytes[gap->end--] = gap->bytes[--gap->start];
 
-	return 0;
+	return 1;
 }
 
 int
@@ -165,7 +160,7 @@ gap_move(Nit_gap *gap, ptrdiff_t amount)
 void
 gap_rewind(Nit_gap *gap)
 {
-	for(; gap->start != 0; --gap->start, --gap->end)
+	for (; gap->start != 0; --gap->start, --gap->end)
 		gap->bytes[gap->end] = gap->bytes[gap->start];
 
 	/* Once more now that we are at 0 */
@@ -177,7 +172,7 @@ gap_to_end(Nit_gap *gap)
 {
 	const ptrdiff_t max_pos = gap->size - 1;
 
-	for(; gap->end < max_pos; ++gap->start, ++gap->end)
+	for (; gap->end < max_pos; ++gap->start, ++gap->end)
 		gap->bytes[gap->start] = gap->bytes[gap->end];
 
 	/* Once more now that we are at the end */
@@ -187,7 +182,7 @@ gap_to_end(Nit_gap *gap)
 int
 gap_gap_put(Nit_gap *des, const Nit_gap *src)
 {
-	return gap_write(des, src->bytes, src->start) ||
+	return gap_write(des, src->bytes, src->start) &&
 		gap_write(des, bytes_past_end(src), size_past_end(src));
 }
 
@@ -197,13 +192,13 @@ gap_write(Nit_gap *gap, const void *data, size_t size)
 {
 	size_t count = 0;
 
-	if (gap_resize(gap, size))
-		return 1;
+	if (!gap_resize(gap, size))
+		return 0;
 
 	for (; count < size; ++count)
 		gap->bytes[gap->start++] = ((char *) data)[count];
 
-	return 0;
+	return 1;
 }
 
 void
@@ -237,53 +232,52 @@ int
 gap_copy_f(const Nit_gap *gap, void *data, size_t size)
 {
 	if (unlikely(!gap_valid_pos(gap, gap->end + size)))
-			return 1;
+		return 0;
 
 	memcpy(data, bytes_past_end(gap), size);
-	return 0;
+	return 1;
 }
 
 int
 gap_copy_b(const Nit_gap *gap, void *data, size_t size)
 {
 	if (unlikely(!gap_valid_pos(gap, gap->start - size)))
-			return 1;
+		return 0;
 
 	memcpy(data, gap->bytes + gap->start - size, size);
-	return 0;
+	return 1;
 }
 
 int
 gap_cut_f(Nit_gap *gap, void *data, size_t size)
 {
-	if (unlikely(gap_copy_f(gap, data, size)))
-		return 1;
+	if (unlikely(!gap_copy_f(gap, data, size)))
+		return 0;
 
 	gap->end += size;
-	return 0;
+	return 1;
 }
 
 int
 gap_cut_b(Nit_gap *gap, void *data, size_t size)
 {
-	if (unlikely(gap_copy_b(gap, data, size)))
-		return 1;
+	if (unlikely(!gap_copy_b(gap, data, size)))
+		return 0;
 
 	gap->start -= size;
-
-	return 0;
+	return 1;
 }
 
 int
 gap_next(Nit_gap *gap, void *data, size_t size)
 {
-	return gap_copy_f(gap, data, size) || gap_move_f(gap, size);
+	return gap_copy_f(gap, data, size) && gap_move_f(gap, size);
 }
 
 int
 gap_prev(Nit_gap *gap, void *data, size_t size)
 {
-	return gap_copy_b(gap, data, size) || gap_move_b(gap, size);
+	return gap_copy_b(gap, data, size) && gap_move_b(gap, size);
 }
 
 int
@@ -292,10 +286,10 @@ gap_erase_f(Nit_gap *gap, size_t amount)
 	size_t pos;
 
 	if (unlikely(!gap_valid_pos(gap, pos = gap->end + amount)))
-			return 1;
+		return 0;
 
 	gap->end = pos;
-	return 0;
+	return 1;
 }
 
 int
@@ -304,10 +298,10 @@ gap_erase_b(Nit_gap *gap, size_t amount)
 	size_t pos;
 
 	if (unlikely(!gap_valid_pos(gap, pos = gap->start - amount)))
-			return 1;
+		return 0;
 
 	gap->start = pos;
-	return 0;
+	return 1;
 }
 
 int
@@ -345,23 +339,23 @@ nit_gap_compare(const Nit_gap *gap1, const Nit_gap *gap2)
 		num1 = gap2->start;
 	}
 
-	if (strncmp(str1, str2, num1))
+	if (memcmp(str1, str2, num1))
 		return 0;
 
 	if (!(num2 = gaps[!shorter]->start - num1)) {
 		str1 = bytes_past_end(gap1);
 		str2 = bytes_past_end(gap2);
-		return !strncmp(str1, str2, size_past_end(gap1));
+		return !memcmp(str1, str2, size_past_end(gap1));
 	}
 
 	str1 = bytes_past_end(gaps[shorter]);
 	str2 = gaps[!shorter]->bytes + num1;
 
-	if (strncmp(str1, str2, num2))
+	if (memcmp(str1, str2, num2))
 		return 0;
 
 	str1 += num2;
 	str2 = bytes_past_end(gaps[!shorter]);
 	num2 = size_past_end(gaps[!shorter]);
-	return !strncmp(str1, str2, num2);
+	return !memcmp(str1, str2, num2);
 }

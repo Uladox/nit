@@ -86,9 +86,9 @@ test_gap_buf(const MunitParameter params[], void *data)
 	Nit_gap gap;
 	char clone_str[ARRAY_UNITS(str5)];
 
-	munit_assert_false(gap_init(&gap, sizeof(str1)));
+	munit_assert_true(gap_init(&gap, sizeof(str1)));
 
-	munit_assert_false(gap_write(&gap, str1, sizeof(str1)));
+	munit_assert_true(gap_write(&gap, str1, sizeof(str1)));
 	gap_read(&gap, str2);
 	munit_assert_string_equal(str2, str1);
 
@@ -98,18 +98,18 @@ test_gap_buf(const MunitParameter params[], void *data)
 	gap_empty(&gap);
 
 	/* Check same with a buffer increase after empty */
-	munit_assert_false(gap_write(&gap, str3, sizeof(str3)));
+	munit_assert_true(gap_write(&gap, str3, sizeof(str3)));
 	gap_read(&gap, str4);
 	munit_assert_string_equal(str4, str3);
 
 	/* gap_print(&gap); */
 
 	/* Reset buffer in another way */
-	munit_assert_false(nit_gap_erase_b(&gap, sizeof(str4)));
+	munit_assert_true(nit_gap_erase_b(&gap, sizeof(str4)));
 
 	/* Try adding strings together */
-	munit_assert_false(gap_write(&gap, str1, sizeof(str1) - 1));
-	munit_assert_false(gap_write(&gap, str3, sizeof(str3) - 1));
+	munit_assert_true(gap_write(&gap, str1, sizeof(str1) - 1));
+	munit_assert_true(gap_write(&gap, str3, sizeof(str3) - 1));
 	gap_read_str(&gap, str6);
 	munit_assert_string_equal(str6, str5);
 
@@ -118,7 +118,7 @@ test_gap_buf(const MunitParameter params[], void *data)
 	munit_assert_string_equal(str7, str5);
 
 	/* Tries cloning */
-	munit_assert_false(gap_clone(&clone, &gap));
+	munit_assert_true(gap_clone(&clone, &gap));
 	gap_read_str(&clone, clone_str);
 	munit_assert_string_equal(clone_str, str5);
 
