@@ -5,7 +5,7 @@
 typedef struct nit_gap {
 	char *bytes;
 	size_t size;
-	/* Used to store index of gap, not actual ptr dif. */
+	/* Used to store num bytes of gap, not actual ptr dif or index. */
         ptrdiff_t start;
 	ptrdiff_t end;
 } Nit_gap;
