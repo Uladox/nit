@@ -5,7 +5,7 @@
 typedef struct nit_gap {
 	char *bytes;
 	size_t size;
-	/* Used to store num bytes of gap, not actual ptr dif or index. */
+	/* Used to indexs (like gap->bytes[]) of gap's start and end. */
         ptrdiff_t start;
 	ptrdiff_t end;
 } Nit_gap;
@@ -110,6 +110,11 @@ nit_gap_empty(Nit_gap *gap);
 int
 nit_gap_compare(const Nit_gap *gap1, const Nit_gap *gap2);
 
+/* Other */
+
+void *
+nit_gap_ptr(Nit_gap *gap, size_t pos);
+
 #if defined NIT_SHORT_NAMES || defined NIT_GAP_BUF_SHORT_NAMES
 # define gap_init(...)      nit_gap_init(__VA_ARGS__)
 # define gap_clone(...)     nit_gap_clone(__VA_ARGS__)
@@ -139,4 +144,5 @@ nit_gap_compare(const Nit_gap *gap1, const Nit_gap *gap2);
 # define gap_erase(...)     nit_gap_erase(__VA_ARGS__)
 # define gap_empty(...)     nit_gap_empty(__VA_ARGS__)
 # define gap_compare(...)   nit_gap_compare(__VA_ARGS__)
+# define gap_ptr(...)       nit_gap_ptr(__VA_ARGS__)
 #endif
