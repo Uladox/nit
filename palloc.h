@@ -13,3 +13,5 @@
 	do { if (unlikely(!(ptr))) return (error); } while (0)
 #define pcheck_c(ptr, error, code)					\
 	do { if (unlikely(!(ptr))) { (code); return (error); } } while (0)
+#define pcheck_g(ptr, label)					\
+	do { if (unlikely(!(ptr))) goto label; } while (0)
