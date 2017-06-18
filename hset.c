@@ -1,19 +1,20 @@
-/*    This file is part of nitlib.
+/*    This file is part of nit.
  *
- *    Nitlib is free software: you can redistribute it and/or modify
+ *    Nit is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU Lesser General Public License as published by
  *    the Free Software Foundation, either version 3 of the License, or
  *    (at your option) any later version.
  *
- *    Foobar is distributed in the hope that it will be useful,
+ *    Nit is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU Lesser General Public License for more details.
  *
  *    You should have received a copy of the GNU Lesser General Public License
- *    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ *    along with nit.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +23,7 @@
 #define NIT_SHORT_NAMES
 #include "macros.h"
 #include "palloc.h"
+#include "err.h"
 #include "list.h"
 #include "hset.h"
 
@@ -48,6 +50,7 @@ void
 rehash(Nit_hset *set);
 
 #define ROT32(x, y) ((x << y) | (x >> (32 - y)))
+
 static uint32_t
 murmur3_32(const char *key, uint32_t len, uint32_t seed)
 {
@@ -81,8 +84,10 @@ murmur3_32(const char *key, uint32_t len, uint32_t seed)
 	switch (len & 3) {
 	case 3:
 		k1 ^= tail[2] << 16;
+		__attribute__ ((fallthrough));
 	case 2:
 		k1 ^= tail[1] << 8;
+		__attribute__ ((fallthrough));
 	case 1:
 		k1 ^= tail[0];
 
@@ -98,7 +103,6 @@ murmur3_32(const char *key, uint32_t len, uint32_t seed)
 	h ^= (h >> 13);
 	h *= 0xc2b2ae35;
 	h ^= (h >> 16);
-
 	return h;
 }
 
@@ -118,17 +122,16 @@ hentry_new(void *dat, uint32_t key_size, Nit_hentry **stack)
 
 	if (!*stack) {
 		entry = palloc(entry);
+		pcheck_e(entry, NULL, NIT_ERR_MEM);
 	} else {
 		entry = *stack;
 		*stack = LIST_NEXT(*stack, void);
 	}
 
-	pcheck(entry, NULL);
 	entry->dat = dat;
 	entry->key_size = key_size;
 	entry->hash = murmur3_32(dat, key_size, H_SEED);
         LIST_APP(entry, NULL);
-
 	return entry;
 }
 
@@ -137,10 +140,8 @@ nit_hset_init(Nit_hset *set, unsigned int sequence)
 {
 	set->bin_pos = sequence;
 	set->entry_num = 0;
-
-	if (!(set->bins = calloc(bin_num[sequence], sizeof(*set->bins))))
-		return 0;
-
+	pcheck_e(set->bins = calloc(bin_num[sequence], sizeof(*set->bins)),
+		 0, NIT_ERR_MEM);
 	return 1;
 }
 
@@ -182,12 +183,18 @@ nit_hset_dispose_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
 	free(set->bins);
 }
 
+void
+nit_hset_empty_dispose(Nit_hset *set)
+{
+	free(set->bins);
+}
+
 Nit_hset *
 hset_new(unsigned int sequence)
 {
 	Nit_hset *set = palloc(set);
 
-	pcheck(set, NULL);
+	pcheck_e(set, NULL, NIT_ERR_MEM);
 
 	if (!hset_init(set, sequence)) {
 		free(set);
@@ -209,6 +216,13 @@ hset_free_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
 		  Nit_hentry **stack)
 {
         hset_dispose_recycle(set, dat_free, extra, stack);
+	free(set);
+}
+
+void
+hset_empty_free(Nit_hset *set)
+{
+	free(set->bins);
 	free(set);
 }
 
@@ -246,7 +260,7 @@ hset_add_reduce(Nit_hset *set)
 	if (++set->entry_num / bin_num[set->bin_pos] >= BIN_MAX_DENSITY)
 		return hset_rehash(set);
 
-	return 0;
+	return 1;
 }
 
 int
@@ -260,8 +274,10 @@ hset_add_unique(Nit_hset *set, void *dat, uint32_t key_size,
 
 	pcheck(*entry = hentry_new(dat, key_size, stack), -1);
 
-	if (unlikely(hset_add_reduce(set)))
+	if (unlikely(!hset_add_reduce(set))) {
+		free(entry);
 		return -1;
+	}
 
 	return 1;
 }
@@ -273,6 +289,12 @@ hset_add(Nit_hset *set, void *dat, uint32_t key_size, Nit_hentry **stack)
 	Nit_hentry **bin;
 
 	pcheck(entry, 0);
+
+	if (unlikely(!hset_add_reduce(set))) {
+		free(entry);
+		return 0;
+	}
+
 	bin = set->bins + (entry->hash % bin_num[set->bin_pos]);
 	LIST_APP(entry, *bin);
         *bin = entry;
@@ -285,12 +307,15 @@ nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size,
 {
 	void *new_dat = malloc(key_size);
 
-	if (!new_dat)
-		return -1;
-
+	pcheck_e(new_dat, 0, NIT_ERR_MEM);
 	memcpy(new_dat, dat, key_size);
 
-	return hset_add(set, new_dat, key_size, stack);
+	if (!hset_add(set, new_dat, key_size, stack)) {
+	        free(new_dat);
+		return 0;
+	}
+
+	return 1;
 }
 
 void *
@@ -375,7 +400,7 @@ hset_rehash(Nit_hset *set)
 	int new_bin_num = bin_num[set->bin_pos + 1];
 	Nit_hentry **new_bins = palloc_a(new_bins, new_bin_num);
 
-	pcheck(new_bins, 0);
+	pcheck_e(new_bins, 0, NIT_ERR_MEM);
 
 	for (i = 0; i != new_bin_num; ++i)
 		new_bins[i] = NULL;
@@ -395,7 +420,6 @@ hset_rehash(Nit_hset *set)
 	free(set->bins);
 	set->bins = new_bins;
 	++set->bin_pos;
-
 	return 1;
 }
 

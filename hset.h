@@ -1,17 +1,17 @@
-/*    This file is part of nitlib.
+/*    This file is part of nit.
  *
- *    Nitlib is free software: you can redistribute it and/or modify
+ *    Nit is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU Lesser General Public License as published by
  *    the Free Software Foundation, either version 3 of the License, or
  *    (at your option) any later version.
  *
- *    Foobar is distributed in the hope that it will be useful,
+ *    Nit is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU Lesser General Public License for more details.
  *
  *    You should have received a copy of the GNU Lesser General Public License
- *    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ *    along with nit.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* Include these
@@ -60,6 +60,9 @@ void
 nit_hset_dispose_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
 			 Nit_hentry **stack);
 
+void
+nit_hset_empty_dispose(Nit_hset *set);
+
 Nit_hset *
 nit_hset_new(unsigned int sequence);
 
@@ -69,6 +72,9 @@ nit_hset_free(Nit_hset *set, Nit_set_free dat_free, void *extra);
 void
 nit_hset_free_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
 		      Nit_hentry **stack);
+
+void
+nit_hset_empty_free(Nit_hset *set);
 
 Nit_hentry **
 nit_hset_entry(Nit_hset *set, void *dat, uint32_t key_size);
@@ -118,9 +124,11 @@ nit_hset_iter_next(Nit_hset_iter *iter);
 # define hset_init(...)            nit_hset_init(__VA_ARGS__)
 # define hset_dispose(...)         nit_hset_dispose(__VA_ARGS__)
 # define hset_dispose_recycle(...) nit_hset_dispose_recycle(__VA_ARGS__)
+# define hset_empty_dispose(...)   nit_hset_empty_dispose(__VA_ARGS__)
 # define hset_new(...)             nit_hset_new(__VA_ARGS__)
 # define hset_free(...)            nit_hset_free(__VA_ARGS__)
 # define hset_free_recycle(...)    nit_hset_free_recycle(__VA_ARGS__)
+# define hset_empty_free(...)      nit_hset_empty_free(__VA_ARGS__)
 # define hset_entry(...)           nit_hset_entry(__VA_ARGS__)
 # define hset_add_reduce(...)      nit_hset_add_reduce(__VA_ARGS__)
 # define hset_add_unique(...)      nit_hset_add_unique(__VA_ARGS__)

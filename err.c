@@ -14,22 +14,23 @@
  *    along with nit.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* This file should not be required for any other headers */
+#include <errno.h>
 
-#if defined(__GNUC__) || defined(__clang__)
-# define likely(val)   __builtin_expect(!!(val), 1)
-# define unlikely(val) __builtin_expect(!!(val), 0)
-#else
-# define likely(val)   (val)
-# define unlikely(val) (val)
-#endif
+#include "err.h"
 
-#define ARRAY_UNITS(array) (sizeof(array) / sizeof(*array))
+enum nit_err
+nit_err_code(void)
+{
+	return errno;
+}
 
-#define QUOTE(...) #__VA_ARGS__
+const char *
+nit_err_str(void)
+{
+	switch (nit_err_code()) {
+	case NIT_ERR_MEM:
+		return "out of memory";
+	}
 
-#define ANY_TYPE(val) ((void *) (val))
-
-/* If used, #include <stddef.h> */
-#define CONTAINER(ptr, type, member)		\
-	((type *) ((char *)(ptr) - offsetof(type, member))
+	return "error getting error string";
+}

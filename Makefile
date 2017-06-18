@@ -2,12 +2,11 @@
 
 include config.mk
 
-SRC = hmap.c gap-buf.c hset.c vec.c lvec.c
+SRC = hset.c hmap.c err.c
 OBJ = $(SRC:.c=.o)
 
 LIB = libnit.a
-INC = list.h hmap.h palloc.h macros.h \
-      gap-buf.h hset.h vec.h lvec.h
+INC = macros.h palloc.h err.h list.h hset.h hmap.h
 
 all: $(LIB)
 
@@ -18,7 +17,7 @@ $(LIB): $(OBJ)
 	@$(CC) $(CFLAGS) -c $<
 
 install: $(LIB) $(INC)
-	@echo @ install libnit to $(DESTDIR)$(PREFIX)
+	@echo @ install nit to $(DESTDIR)$(PREFIX)
 	@mkdir -p $(DESTDIR)$(PREFIX)/lib
 	@cp $(LIB) $(DESTDIR)$(PREFIX)/lib/$(LIB)
 	@mkdir -p $(DESTDIR)$(PREFIX)/include/nit

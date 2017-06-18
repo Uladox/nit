@@ -1,17 +1,17 @@
-/*    This file is part of nitlib.
+/*    This file is part of nit.
  *
- *    Nitlib is free software: you can redistribute it and/or modify
+ *    Nit is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU Lesser General Public License as published by
  *    the Free Software Foundation, either version 3 of the License, or
  *    (at your option) any later version.
  *
- *    Foobar is distributed in the hope that it will be useful,
+ *    Nit is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU Lesser General Public License for more details.
  *
  *    You should have received a copy of the GNU Lesser General Public License
- *    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ *    along with nit.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* Include these
@@ -49,6 +49,12 @@ void
 nit_hmap_dispose_recycle(Nit_hmap *map, Nit_map_free dat_free, void *extra,
 			 Nit_hentry **stack);
 
+static inline void
+nit_hmap_empty_dispose(Nit_hmap *map)
+{
+	nit_hset_empty_dispose(map);
+}
+
 static inline Nit_hmap *
 nit_hmap_new(unsigned int sequence)
 {
@@ -61,6 +67,12 @@ nit_hmap_free(Nit_hmap *hmap, Nit_map_free dat_free, void *extra);
 void
 nit_hmap_free_recycle(Nit_hmap *map, Nit_map_free dat_free, void *extra,
 		      Nit_hentry **stack);
+
+static inline void
+nit_hmap_empty_free(Nit_hmap *map)
+{
+        nit_hset_empty_free(map);
+}
 
 void *
 nit_hmap_dat_new(void *key, uint32_t key_size, void *storage);
@@ -143,8 +155,10 @@ nit_hmap_iter_next(Nit_hmap_iter *iter)
 # define hmap_dispose(...)         nit_hmap_dispose(__VA_ARGS__)
 # define hmap_new(...)             nit_hmap_new(__VA_ARGS__)
 # define hmap_dispose_recycle(...) nit_hmap_dispose_recycle(__VA_ARGS__)
+# define hmap_empty_dispose(...)   nit_hmap_empty_dispose(__VA_ARGS__)
 # define hmap_free(...)            nit_hmap_free(__VA_ARGS__)
 # define hmap_free_recycle(...)    nit_hmap_free_recycle(__VA_ARGS__)
+# define hmap_empty_free(...)      nit_hmap_empty_free(__VA_ARGS__)
 # define hmap_dat_new(...)         nit_hmap_dat_new(__VA_ARGS__)
 # define hmap_entry(...)           nit_hmap_entry(__VA_ARGS__)
 # define hmap_add_reduce(...)      nit_hmap_add_reduce(__VA_ARGS__)

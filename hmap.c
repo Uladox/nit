@@ -1,19 +1,20 @@
-/*    This file is part of nitlib.
+/*    This file is part of nit.
  *
- *    Nitlib is free software: you can redistribute it and/or modify
+ *    Nit is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU Lesser General Public License as published by
  *    the Free Software Foundation, either version 3 of the License, or
  *    (at your option) any later version.
  *
- *    Foobar is distributed in the hope that it will be useful,
+ *    Nit is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU Lesser General Public License for more details.
  *
  *    You should have received a copy of the GNU Lesser General Public License
- *    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ *    along with nit.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +23,7 @@
 #define NIT_SHORT_NAMES
 #include "macros.h"
 #include "palloc.h"
+#include "err.h"
 #include "list.h"
 #include "hset.h"
 #include "hmap.h"
@@ -90,12 +92,9 @@ hmap_dat_new(void *key, uint32_t key_size, void *storage)
 {
 	char *dat = malloc(key_size + sizeof(void *));
 
-	if (!dat)
-		return NULL;
-
+	pcheck_e(dat, NULL, NIT_ERR_MEM);
 	memcpy(dat, key, key_size);
 	memcpy(dat + key_size, &storage, sizeof(void *));
-
 	return dat;
 }
 
@@ -105,25 +104,26 @@ nit_hmap_add(Nit_hmap *map, void *key, uint32_t key_size, void *storage,
 {
 	void *dat = hmap_dat_new(key, key_size, storage);
 
-	if (!dat)
-		return -1;
+	pcheck(dat, 0);
 
-	return nit_hset_add(map, dat, key_size, stack);
+        if (!nit_hset_add(map, dat, key_size, stack)) {
+		free(dat);
+		return 0;
+	}
+
+	return 1;
 }
 
 void *
 nit_hmap_remove(Nit_hmap *map, void *key, uint32_t key_size,
 		Nit_hentry **stack)
 {
-	void *dat = nit_hset_remove(map, key, key_size, stack);
+	void *dat = hset_remove(map, key, key_size, stack);
 	void *storage;
 
-	if (!dat)
-		return NULL;
-
+	pcheck(dat, NULL);
 	storage = hmap_storage(dat, key_size);
 	free(dat);
-
 	return storage;
 }
 
