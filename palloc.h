@@ -40,12 +40,3 @@
 
 #define pcheck_g(ptr, label)					\
 	do { if (unlikely(!(ptr))) goto label; } while (0)
-
-#define pcheck_e(ptr, ret_val, err)				\
-	do { errno = (err); pcheck(ptr, ret_val); } while (0)
-
-#define pcheck_ce(ptr, ret_val, err, ...)				\
-	do { errno = (err); pcheck_c(ptr, ret_val, __VA_ARGS__); } while (0)
-
-#define pcheck_ge(ptr, label, err)				\
-	do { errno = (err); pcheck_g(ptr, label); } while (0)

@@ -36,7 +36,7 @@ test_hmap(const MunitParameter params[], void *data)
 		int *storage = malloc(sizeof(i));
 
 		*storage = i;
-		munit_assert_true(hmap_add(map, &i, sizeof(i),
+		munit_assert_false(hmap_add(map, &i, sizeof(i),
 					   storage, &stack));
 	}
 
