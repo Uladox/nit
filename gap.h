@@ -9,6 +9,7 @@ typedef struct {
 	Nit_buf buf;
 } Nit_gap;
 
+/* size must atleast be 1. */
 int
 nit_gap_init(Nit_gap *gap, size_t size);
 
@@ -34,6 +35,9 @@ int
 nit_gap_movef(Nit_gap *gap);
 
 int
+nit_gap_to(Nit_gap *gap, size_t pos);
+
+int
 nit_gap_write(Nit_gap *gap, char dat);
 
 int
@@ -51,6 +55,7 @@ nit_gap_erase(Nit_gap *gap);
 # define gap_expand(...)  nit_gap_expand(__VA_ARGS__)
 # define gap_moveb(...)   nit_gap_moveb(__VA_ARGS__)
 # define gap_movef(...)   nit_gap_movef(__VA_ARGS__)
+# define gap_to(...)      nit_gap_to(__VA_ARGS__)
 # define gap_write(...)   nit_gap_write(__VA_ARGS__)
 # define gap_read(...)    nit_gap_read(__VA_ARGS__)
 # define gap_erase(...)   nit_gap_erase(__VA_ARGS__)

@@ -14,6 +14,7 @@
 #include "../hmap.h"
 #include "../buf.h"
 #include "../gap.h"
+#include "../crs.h"
 
 #define HMAP_MAX 100
 
@@ -70,9 +71,10 @@ test_gap(const MunitParameter params[], void *data)
 {
 	Nit_gap *gap = gap_new(1);
 	char c;
+	Nit_crs crs;
 
-	/* munit_assert_int(gap_expand(gap, 3), ==, 0); */
 	munit_assert_int(gap_write(gap, 'a'), ==, 0);
+	munit_assert_int(gap_expand(gap, 3), ==, 0);
 	munit_assert_int(gap_write(gap, 'b'), ==, 0);
 	munit_assert_int(gap_write(gap, 'c'), ==, 0);
 	munit_assert_int(gap_write(gap, 'd'), ==, 0);
@@ -107,6 +109,52 @@ test_gap(const MunitParameter params[], void *data)
 	munit_assert_int(gap_movef(gap), ==, 0);
 	munit_assert_int(gap_read(gap, &c), ==, 0);
 	munit_assert_char(c, ==, 'a');
+
+	munit_assert_int(gap_to(gap, 3), ==, 0);
+	munit_assert_int(gap_read(gap, &c), ==, 0);
+	munit_assert_char(c, ==, 'c');
+
+	munit_assert_int(gap_to(gap, 1), ==, 0);
+	munit_assert_int(gap_read(gap, &c), ==, 0);
+	munit_assert_char(c, ==, 'a');
+
+	/* testing crs */
+
+	crs_init(&crs, gap, 2);
+	munit_assert_int(crs_read(&crs, &c), ==, 0);
+	munit_assert_char(c, ==, 'b');
+
+	munit_assert_int(crs_movef(&crs), ==, 0);
+	munit_assert_int(crs_read(&crs, &c), ==, 0);
+	munit_assert_char(c, ==, 'c');
+
+	munit_assert_int(crs_moveb(&crs), ==, 0);
+	munit_assert_int(crs_moveb(&crs), ==, 0);
+	munit_assert_int(crs_read(&crs, &c), ==, 0);
+	munit_assert_char(c, ==, 'a');
+
+	munit_assert_int(crs_write(&crs, 'q'), ==, 0);
+	munit_assert_int(crs_read(&crs, &c), ==, 0);
+	munit_assert_char(c, ==, 'q');
+
+	munit_assert_int(crs_to(&crs, 5), ==, 0);
+	munit_assert_int(crs_read(&crs, &c), ==, 0);
+	munit_assert_char(c, ==, 'd');
+
+	munit_assert_int(crs_erase(&crs), ==, 0);
+	munit_assert_int(crs_read(&crs, &c), ==, 0);
+	munit_assert_char(c, ==, 'c');
+
+	while (crs_moveb(&crs) == 0);
+
+	munit_assert_int(crs_movef(&crs), ==, 0);
+	munit_assert_int(crs_read(&crs, &c), ==, 0);
+	munit_assert_char(c, ==, 'a');
+
+	while (crs_movef(&crs) == 0);
+
+	munit_assert_int(crs_read(&crs, &c), ==, 0);
+	munit_assert_char(c, ==, 'c');
 
 	gap_free(gap);
 	return MUNIT_OK;

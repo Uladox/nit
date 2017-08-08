@@ -114,6 +114,25 @@ gap_movef(Nit_gap *gap)
 }
 
 int
+gap_to(Nit_gap *gap, size_t pos)
+{
+	if (unlikely(pos > gap->buf.size - gap->size))
+		return -1;
+
+	if (pos > gap->start) {
+		while (gap->start != pos)
+			gap_movef(gap);
+
+		return 0;
+	}
+
+	while (gap->start != pos)
+		gap_moveb(gap);
+
+	return 0;
+}
+
+int
 gap_write(Nit_gap *gap, char dat)
 {
 	if (unlikely(!gap->size && gap_expand(gap, gap->buf.size) < 0))

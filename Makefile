@@ -2,11 +2,11 @@
 
 include config.mk
 
-SRC = hset.c hmap.c buf.c gap.c
+SRC = hset.c hmap.c buf.c gap.c crs.c
 OBJ = $(SRC:.c=.o)
 
 LIB = libnit.a
-INC = macros.h palloc.h list.h hset.h hmap.h buf.h gap.h
+INC = macros.h palloc.h list.h hset.h hmap.h buf.h gap.h crs.h
 
 all: $(LIB)
 
