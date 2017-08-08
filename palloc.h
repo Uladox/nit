@@ -17,7 +17,6 @@
 /* This file should not be required for any other headers */
 
 /* Include these
-   #include <errno.h> (if you want to change errno)
    #include <stdlib.h>
    #include "macros.h"
  */
@@ -40,3 +39,11 @@
 
 #define pcheck_g(ptr, label)					\
 	do { if (unlikely(!(ptr))) goto label; } while (0)
+
+#define pcheck_gc(ptr, label, ...)					\
+	do {								\
+		if (unlikely(!(ptr))) {					\
+			(__VA_ARGS__);					\
+		        goto label;					\
+		}							\
+	} while (0)

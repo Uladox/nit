@@ -12,6 +12,8 @@
 #include "../list.h"
 #include "../hset.h"
 #include "../hmap.h"
+#include "../buf.h"
+#include "../gap.h"
 
 #define HMAP_MAX 100
 
@@ -63,8 +65,57 @@ test_hmap(const MunitParameter params[], void *data)
 	return MUNIT_OK;
 }
 
+static MunitResult
+test_gap(const MunitParameter params[], void *data)
+{
+	Nit_gap *gap = gap_new(1);
+	char c;
+
+	/* munit_assert_int(gap_expand(gap, 3), ==, 0); */
+	munit_assert_int(gap_write(gap, 'a'), ==, 0);
+	munit_assert_int(gap_write(gap, 'b'), ==, 0);
+	munit_assert_int(gap_write(gap, 'c'), ==, 0);
+	munit_assert_int(gap_write(gap, 'd'), ==, 0);
+	munit_assert_int(gap_write(gap, 'e'), ==, 0);
+
+	munit_assert_int(gap_read(gap, &c), ==, 0);
+	munit_assert_char(c, ==, 'e');
+
+	munit_assert_int(gap_erase(gap), ==, 0);
+	munit_assert_int(gap_read(gap, &c), ==, 0);
+	munit_assert_char(c, ==, 'd');
+
+	munit_assert_int(gap_moveb(gap), ==, 0);
+	munit_assert_int(gap_read(gap, &c), ==, 0);
+	munit_assert_char(c, ==, 'c');
+
+	munit_assert_int(gap_moveb(gap), ==, 0);
+	munit_assert_int(gap_read(gap, &c), ==, 0);
+	munit_assert_char(c, ==, 'b');
+
+	munit_assert_int(gap_movef(gap), ==, 0);
+	munit_assert_int(gap_read(gap, &c), ==, 0);
+	munit_assert_char(c, ==, 'c');
+
+	while (gap_movef(gap) == 0);
+
+	munit_assert_int(gap_read(gap, &c), ==, 0);
+	munit_assert_char(c, ==, 'd');
+
+	while (gap_moveb(gap) == 0);
+
+	munit_assert_int(gap_movef(gap), ==, 0);
+	munit_assert_int(gap_read(gap, &c), ==, 0);
+	munit_assert_char(c, ==, 'a');
+
+	gap_free(gap);
+	return MUNIT_OK;
+}
+
 static MunitTest test_suite_tests[] = {
 	{ (char *) "/hmap", test_hmap,
+	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
+	{ (char *) "/gap", test_gap,
 	  NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
 	{ NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
 
