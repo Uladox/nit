@@ -16,16 +16,10 @@ crs_moveb(Nit_crs *crs)
 	return 0;
 }
 
-static size_t
-gap_max(Nit_gap *gap)
-{
-	return gap->buf.size - gap->size;
-}
-
 int
 crs_movef(Nit_crs *crs)
 {
-	if (unlikely(crs->pos == gap_max(crs->gap)))
+	if (unlikely(crs->pos == gap_len(crs->gap)))
 		return -1;
 
 	++crs->pos;
@@ -35,7 +29,7 @@ crs_movef(Nit_crs *crs)
 int
 crs_to(Nit_crs *crs, size_t pos)
 {
-	if (unlikely(pos > gap_max(crs->gap)))
+	if (unlikely(pos > gap_len(crs->gap)))
 		return -1;
 
 	crs->pos = pos;

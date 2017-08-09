@@ -72,7 +72,9 @@ test_gap(const MunitParameter params[], void *data)
 	Nit_gap *gap = gap_new(1);
 	char c;
 	Nit_crs crs;
+	Nit_buf *buf;
 
+	munit_assert_not_null(gap);
 	munit_assert_int(gap_write(gap, 'a'), ==, 0);
 	munit_assert_int(gap_expand(gap, 3), ==, 0);
 	munit_assert_int(gap_write(gap, 'b'), ==, 0);
@@ -156,6 +158,20 @@ test_gap(const MunitParameter params[], void *data)
 	munit_assert_int(crs_read(&crs, &c), ==, 0);
 	munit_assert_char(c, ==, 'c');
 
+	munit_assert_not_null(buf = buf_new(1));
+	munit_assert_int(crs_write(&crs, '\0'), ==, 0);
+	munit_assert_int(gap_to_buf(gap, buf), ==, 0);
+	munit_assert_string_equal(buf->bytes, "aqbc");
+
+	munit_assert_int(buf_resize(buf, 11), ==, 0);
+	strcpy(buf->bytes, "abcdefghij");
+	munit_assert_int(gap_from_buf(gap, buf), ==, 0);
+        gap_end(gap);
+	munit_assert_int(gap_moveb(gap), ==, 0);
+	munit_assert_int(gap_read(gap, &c), ==, 0);
+	munit_assert_char(c, ==, 'j');
+
+	buf_free(buf);
 	gap_free(gap);
 	return MUNIT_OK;
 }

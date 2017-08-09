@@ -43,6 +43,12 @@ gap_free(Nit_gap *gap)
 	free(gap);
 }
 
+size_t
+gap_len(Nit_gap *gap)
+{
+	return gap->buf.size - gap->size;
+}
+
 static char *
 after_gap(Nit_gap *gap)
 {
@@ -113,10 +119,22 @@ gap_movef(Nit_gap *gap)
 	return 0;
 }
 
+void
+nit_gap_start(Nit_gap *gap)
+{
+	while (likely(gap_moveb(gap) == 0));
+}
+
+void
+nit_gap_end(Nit_gap *gap)
+{
+	while (likely(gap_movef(gap) == 0));
+}
+
 int
 gap_to(Nit_gap *gap, size_t pos)
 {
-	if (unlikely(pos > gap->buf.size - gap->size))
+	if (unlikely(pos > gap_len(gap)))
 		return -1;
 
 	if (pos > gap->start) {
@@ -162,5 +180,41 @@ gap_erase(Nit_gap *gap)
 
 	--gap->start;
 	++gap->size;
+	return 0;
+}
+
+void
+gap_clear(Nit_gap *gap)
+{
+	gap->start = 0;
+	gap->size = gap->buf.size;
+}
+
+void
+gap_copy(Nit_gap *gap, void *dst)
+{
+	copy_to_gap(dst, gap);
+	copy_after_gap((char *) dst + gap->start, gap);
+}
+
+int
+gap_to_buf(Nit_gap *gap, Nit_buf *buf)
+{
+	if (unlikely(buf_resize(buf, gap_len(gap)) < 0))
+		return -1;
+
+	gap_copy(gap, buf->bytes);
+	return 0;
+}
+
+int
+gap_from_buf(Nit_gap *gap, Nit_buf *buf)
+{
+	if (gap->buf.size < buf->size && gap_expand(gap, buf->size * 1.25) < 0)
+		return -1;
+
+        gap->start = 0;
+	gap->size = gap->buf.size - buf->size;
+	memcpy(after_gap(gap), buf->bytes, buf->size);
 	return 0;
 }
