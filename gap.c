@@ -83,6 +83,7 @@ gap_resize(Nit_gap *gap, size_t size)
 	copy_to_gap(new_bytes, gap);
 	/* creating the actual gap */
 	copy_after_gap(new_bytes + gap->start + size, gap);
+	free(gap->buf.bytes);
 	gap->buf.size = new_size;
 	gap->buf.bytes = new_bytes;
 	gap->size = size;
