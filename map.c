@@ -25,20 +25,20 @@
 #include "palloc.h"
 #include "err.h"
 #include "list.h"
-#include "hset.h"
-#include "hmap.h"
+#include "set.h"
+#include "map.h"
 
 void
-hmap_dispose(Nit_hmap *map, Nit_map_free dat_free, void *extra)
+map_dispose(Nit_map *map, Nit_map_free dat_free, void *extra)
 {
-	int bin_num = hset_bin_num(map);
+	int bin_num = set_bin_num(map);
 
 	for (int i = 0; i != bin_num; ++i) {
 		Nit_hentry *entry = map->bins[i];
 
 		delayed_foreach (entry) {
 		        dat_free(entry->dat,
-				 hmap_storage(entry->dat, entry->key_size),
+				 map_storage(entry->dat, entry->key_size),
 				 extra);
 			free(entry->dat);
 			free(entry);
@@ -49,17 +49,17 @@ hmap_dispose(Nit_hmap *map, Nit_map_free dat_free, void *extra)
 }
 
 void
-hmap_dispose_recycle(Nit_hmap *map, Nit_map_free dat_free, void *extra,
+map_dispose_recycle(Nit_map *map, Nit_map_free dat_free, void *extra,
 		     Nit_hentry **stack)
 {
-	int bin_num = hset_bin_num(map);
+	int bin_num = set_bin_num(map);
 
 	for (int i = 0; i != bin_num; ++i) {
 		Nit_hentry *entry = map->bins[i];
 
 		delayed_foreach (entry) {
 		        dat_free(entry->dat,
-				 hmap_storage(entry->dat, entry->key_size),
+				 map_storage(entry->dat, entry->key_size),
 				 extra);
 			free(entry->dat);
 		        LIST_APP(entry, *stack);
@@ -71,22 +71,22 @@ hmap_dispose_recycle(Nit_hmap *map, Nit_map_free dat_free, void *extra,
 }
 
 void
-hmap_free(Nit_hmap *map, Nit_map_free dat_free, void *extra)
+map_free(Nit_map *map, Nit_map_free dat_free, void *extra)
 {
-	hmap_dispose(map, dat_free, extra);
+	map_dispose(map, dat_free, extra);
 	free(map);
 }
 
 void
-hmap_free_recycle(Nit_hmap *map, Nit_map_free dat_free, void *extra,
+map_free_recycle(Nit_map *map, Nit_map_free dat_free, void *extra,
 		  Nit_hentry **stack)
 {
-	hmap_dispose_recycle(map, dat_free, extra, stack);
+	map_dispose_recycle(map, dat_free, extra, stack);
 	free(map);
 }
 
 void *
-hmap_dat_new(void *key, uint32_t key_size, void *storage)
+map_dat_new(void *key, uint32_t key_size, void *storage)
 {
 	char *dat = malloc(key_size + sizeof(void *));
 
@@ -97,14 +97,14 @@ hmap_dat_new(void *key, uint32_t key_size, void *storage)
 }
 
 int
-nit_hmap_add(Nit_hmap *map, void *key, uint32_t key_size, void *storage,
+nit_map_add(Nit_map *map, void *key, uint32_t key_size, void *storage,
 	     Nit_hentry **stack)
 {
-	void *dat = hmap_dat_new(key, key_size, storage);
+	void *dat = map_dat_new(key, key_size, storage);
 
 	pcheck(dat, -1);
 
-        if (nit_hset_add(map, dat, key_size, stack)) {
+        if (nit_set_add(map, dat, key_size, stack)) {
 		free(dat);
 		return -1;
 	}
@@ -113,14 +113,14 @@ nit_hmap_add(Nit_hmap *map, void *key, uint32_t key_size, void *storage,
 }
 
 void *
-nit_hmap_remove(Nit_hmap *map, void *key, uint32_t key_size,
+nit_map_remove(Nit_map *map, void *key, uint32_t key_size,
 		Nit_hentry **stack)
 {
-	void *dat = hset_remove(map, key, key_size, stack);
+	void *dat = set_remove(map, key, key_size, stack);
 	void *storage;
 
 	pcheck(dat, NULL);
-	storage = hmap_storage(dat, key_size);
+	storage = map_storage(dat, key_size);
 	free(dat);
 	return storage;
 }

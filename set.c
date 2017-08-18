@@ -24,7 +24,7 @@
 #include "macros.h"
 #include "palloc.h"
 #include "list.h"
-#include "hset.h"
+#include "set.h"
 
 #define BIN_MAX_DENSITY 5
 #define H_SEED 37
@@ -40,13 +40,13 @@ static const int bin_num[] = {
 };
 
 int
-hset_bin_num(Nit_hset *set)
+set_bin_num(Nit_set *set)
 {
 	return bin_num[set->bin_pos];
 }
 
 void
-rehash(Nit_hset *set);
+rehash(Nit_set *set);
 
 #define ROT32(x, y) ((x << y) | (x >> (32 - y)))
 
@@ -135,7 +135,7 @@ hentry_new(void *dat, uint32_t key_size, Nit_hentry **stack)
 }
 
 int
-nit_hset_init(Nit_hset *set, unsigned int sequence)
+nit_set_init(Nit_set *set, unsigned int sequence)
 {
 	set->bin_pos = sequence;
 	set->entry_num = 0;
@@ -144,7 +144,7 @@ nit_hset_init(Nit_hset *set, unsigned int sequence)
 }
 
 void
-nit_hset_dispose(Nit_hset *set, Nit_set_free dat_free, void *extra)
+nit_set_dispose(Nit_set *set, Nit_set_free dat_free, void *extra)
 {
 	for (int i = 0; i != bin_num[set->bin_pos]; ++i) {
 	        Nit_hentry *entry = set->bins[i];
@@ -159,7 +159,7 @@ nit_hset_dispose(Nit_hset *set, Nit_set_free dat_free, void *extra)
 }
 
 void
-nit_hset_dispose_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
+nit_set_dispose_recycle(Nit_set *set, Nit_set_free dat_free, void *extra,
 			 Nit_hentry **stack)
 {
 	for (int i = 0; i != bin_num[set->bin_pos]; ++i) {
@@ -176,19 +176,19 @@ nit_hset_dispose_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
 }
 
 void
-nit_hset_empty_dispose(Nit_hset *set)
+nit_set_empty_dispose(Nit_set *set)
 {
 	free(set->bins);
 }
 
-Nit_hset *
-hset_new(unsigned int sequence)
+Nit_set *
+set_new(unsigned int sequence)
 {
-	Nit_hset *set = palloc(set);
+	Nit_set *set = palloc(set);
 
 	pcheck(set, NULL);
 
-	if (hset_init(set, sequence)) {
+	if (set_init(set, sequence)) {
 		free(set);
 		return NULL;
 	}
@@ -197,22 +197,22 @@ hset_new(unsigned int sequence)
 }
 
 void
-hset_free(Nit_hset *set, Nit_set_free dat_free, void *extra)
+set_free(Nit_set *set, Nit_set_free dat_free, void *extra)
 {
-        hset_dispose(set, dat_free, extra);
+        set_dispose(set, dat_free, extra);
 	free(set);
 }
 
 void
-hset_free_recycle(Nit_hset *set, Nit_set_free dat_free, void *extra,
+set_free_recycle(Nit_set *set, Nit_set_free dat_free, void *extra,
 		  Nit_hentry **stack)
 {
-        hset_dispose_recycle(set, dat_free, extra, stack);
+        set_dispose_recycle(set, dat_free, extra, stack);
 	free(set);
 }
 
 void
-hset_empty_free(Nit_hset *set)
+set_empty_free(Nit_set *set)
 {
 	free(set->bins);
 	free(set);
@@ -225,7 +225,7 @@ row_num(const void *key, uint32_t key_size, int num)
 }
 
 Nit_hentry **
-hset_entry(Nit_hset *set, void *key, uint32_t key_size)
+set_entry(Nit_set *set, void *key, uint32_t key_size)
 {
 	Nit_hentry *entry;
         uint32_t row;
@@ -247,26 +247,26 @@ hset_entry(Nit_hset *set, void *key, uint32_t key_size)
 }
 
 int
-hset_add_reduce(Nit_hset *set)
+set_add_reduce(Nit_set *set)
 {
 	if (++set->entry_num / bin_num[set->bin_pos] >= BIN_MAX_DENSITY)
-		return hset_rehash(set);
+		return set_rehash(set);
 
 	return 0;
 }
 
 int
-hset_add_unique(Nit_hset *set, void *dat, uint32_t key_size,
+set_add_unique(Nit_set *set, void *dat, uint32_t key_size,
 		Nit_hentry **stack)
 {
-	Nit_hentry **entry = hset_entry(set, dat, key_size);
+	Nit_hentry **entry = set_entry(set, dat, key_size);
 
 	if (*entry)
 		return -2;
 
 	pcheck(*entry = hentry_new(dat, key_size, stack), -1);
 
-	if (unlikely(hset_add_reduce(set))) {
+	if (unlikely(set_add_reduce(set))) {
 		free(entry);
 		return -1;
 	}
@@ -275,14 +275,14 @@ hset_add_unique(Nit_hset *set, void *dat, uint32_t key_size,
 }
 
 int
-hset_add(Nit_hset *set, void *dat, uint32_t key_size, Nit_hentry **stack)
+set_add(Nit_set *set, void *dat, uint32_t key_size, Nit_hentry **stack)
 {
 	Nit_hentry *entry = hentry_new(dat, key_size, stack);
 	Nit_hentry **bin;
 
 	pcheck(entry, -1);
 
-	if (unlikely(hset_add_reduce(set))) {
+	if (unlikely(set_add_reduce(set))) {
 		free(entry);
 		return -1;
 	}
@@ -294,7 +294,7 @@ hset_add(Nit_hset *set, void *dat, uint32_t key_size, Nit_hentry **stack)
 }
 
 int
-nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size,
+nit_set_copy_add(Nit_set *set, void *dat, uint32_t key_size,
 		  Nit_hentry **stack)
 {
 	void *new_dat = malloc(key_size);
@@ -302,7 +302,7 @@ nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size,
 	pcheck(new_dat, -1);
 	memcpy(new_dat, dat, key_size);
 
-	if (hset_add(set, new_dat, key_size, stack)) {
+	if (set_add(set, new_dat, key_size, stack)) {
 	        free(new_dat);
 		return -1;
 	}
@@ -311,7 +311,7 @@ nit_hset_copy_add(Nit_hset *set, void *dat, uint32_t key_size,
 }
 
 void *
-hset_remove(Nit_hset *set, const void *dat, uint32_t key_size, Nit_hentry **stack)
+set_remove(Nit_set *set, const void *dat, uint32_t key_size, Nit_hentry **stack)
 {
         uint32_t row = row_num(dat, key_size, bin_num[set->bin_pos]);
 	Nit_hentry *entry = set->bins[row];
@@ -348,7 +348,7 @@ hset_remove(Nit_hset *set, const void *dat, uint32_t key_size, Nit_hentry **stac
 }
 
 void *
-hset_get(const Nit_hset *set, const void *dat, uint32_t key_size)
+set_get(const Nit_set *set, const void *dat, uint32_t key_size)
 {
         uint32_t row = row_num(dat, key_size, bin_num[set->bin_pos]);
 	const Nit_hentry *entry = set->bins[row];
@@ -361,13 +361,13 @@ hset_get(const Nit_hset *set, const void *dat, uint32_t key_size)
 }
 
 int
-hset_contains(const Nit_hset *set, const void *dat, uint32_t key_size)
+set_contains(const Nit_set *set, const void *dat, uint32_t key_size)
 {
-	return !!hset_get(set, dat, key_size);
+	return !!set_get(set, dat, key_size);
 }
 
 int
-hset_subset(const Nit_hset *super, const Nit_hset *sub)
+set_subset(const Nit_set *super, const Nit_set *sub)
 {
 	int i;
 
@@ -378,7 +378,7 @@ hset_subset(const Nit_hset *super, const Nit_hset *sub)
 		Nit_hentry *entry = sub->bins[i];
 
 	        foreach (entry)
-			if (!hset_contains(super, entry->dat, entry->key_size))
+			if (!set_contains(super, entry->dat, entry->key_size))
 				return 0;
 	}
 
@@ -386,7 +386,7 @@ hset_subset(const Nit_hset *super, const Nit_hset *sub)
 }
 
 int
-hset_rehash(Nit_hset *set)
+set_rehash(Nit_set *set)
 {
 	int new_bin_num = bin_num[set->bin_pos + 1];
 	Nit_hentry **new_bins = palloc_a(new_bins, new_bin_num);
@@ -415,7 +415,7 @@ hset_rehash(Nit_hset *set)
 }
 
 static void
-iter_next_nonempty_bin(Nit_hset_iter *iter)
+iter_next_nonempty_bin(Nit_set_iter *iter)
 {
 	for (; iter->bin_num < iter->bin_last - 1; ++iter->bin_num)
 		if (iter->bins[iter->bin_num])
@@ -425,7 +425,7 @@ iter_next_nonempty_bin(Nit_hset_iter *iter)
 }
 
 void
-nit_hset_iter_init(Nit_hset_iter *iter, Nit_hset *set)
+nit_set_iter_init(Nit_set_iter *iter, Nit_set *set)
 {
 	iter->bin_num = 0;
 	iter->bin_last = bin_num[set->bin_pos];
@@ -434,14 +434,14 @@ nit_hset_iter_init(Nit_hset_iter *iter, Nit_hset *set)
 }
 
 void *
-nit_hset_iter_dat(Nit_hset_iter *iter)
+nit_set_iter_dat(Nit_set_iter *iter)
 {
 	pcheck(iter->entry, NULL);
 	return iter->entry->dat;
 }
 
 int
-nit_hset_iter_next(Nit_hset_iter *iter)
+nit_set_iter_next(Nit_set_iter *iter)
 {
 	pcheck(iter->entry, 0);
 
